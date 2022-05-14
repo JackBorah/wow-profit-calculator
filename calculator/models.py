@@ -1,4 +1,3 @@
-from tkinter import CASCADE
 from django.db import models
 from django.urls import reverse
 
@@ -76,7 +75,6 @@ class recipe(models.Model):
     name = models.CharField(max_length=100)
     recipeCatagory = models.ForeignKey("recipeCatagory", on_delete=models.CASCADE)
     mats = models.ManyToManyField("material")
-    
 
 class material(models.Model):
     item = models.ForeignKey("item", on_delete=models.CASCADE)
@@ -87,8 +85,7 @@ class item(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField()
 
-
-
-
-
-
+class itemSet(models.Model):
+    id = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=100)
+    pieces = models.ManyToManyField(item)
