@@ -3,8 +3,7 @@
 #use pprint from import pprint to print out legible json
 #illidanAH.json()['auctions'][0] will get the first auction from the illidanAH
 #links.self.href is the link from where the current json response came from
-from os import access
-from pytest import param
+import os
 import requests
 from pprint import pprint
 
@@ -12,7 +11,7 @@ from pprint import pprint
 tokenData = {'grant_type': 'client_credentials'}
 
 #Client ID, secret
-auth = ('e1682bd6dd3843a0bfa24d652e9490be', '8COiOaIfT4jgFNOhFsdnzVlY6rgJ7Q2a')
+auth = (os.environ["wowApiId"], os.environ["wowApiSecret"])
 
 #defaults
 region = 'us'
@@ -24,10 +23,10 @@ accessTokenParam = {}
 
 def getAccessToken(tokenData = tokenData, auth = auth):
     accessTokenResponse = requests.post('https://us.battle.net/oauth/token', data=tokenData, auth=auth)
-    return accessTokenResponse.json()['access_token']
+    return accessTokenResponse.json()
 
 accessToken = getAccessToken()
-
+print(accessToken)
 def getConnectedRealmIndex(region = region, namespace = dynamicNamespace, locale = locale):
     return requests.get('https://us.api.blizzard.com/data/wow/connected-realm/index', params={'region':region, 'namespace': namespace, 'locale': locale, 'access_token':accessToken}).json()
 
@@ -81,6 +80,3 @@ def getWowToken(region = region, namespace = staticNamespace, locale = locale):
 #I don't think either of these could be fully automated like pulling data if only they supplied it from the api 
 #This seems like I ahve to update it by hand.
 #the wowhead page for an item does take a querystring with a bonusId which will return the correct variant of the item
-
-pprint(getItemList().json())
-pprint(getItemList().url)
