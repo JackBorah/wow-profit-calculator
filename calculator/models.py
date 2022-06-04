@@ -10,17 +10,17 @@ class Realm(models.Model):
             Each element is a (key, value) tuple.
         region_choices (list): The possible realm regions like ('NA', 'North America').
             Eacg element is a (key, value) tuple.
+        connected_realm_id (ForeginKey): This realms connected realm id. Refrences
+            the connected realm index.
+        population (CharField): The amount of players on the realm. One of
+            population_choices. Max length = 20.
         realm_id (DecimalField): The specific id for that realm. Not connected id.
             Max digits = 4. Primary Key.
         name (CharField): Realm's name. Max length = 30.
-        population (CharField): The amount of players on the realm. One of
-            population_choices. Max length = 20.
         region (CharField): The region the realm is in. Ex: North America.
             Max length = 30.
         timezone (CharField): Realms timezone. Ex: America/New_York Max length = 40.
-        type (CharField): Is the realm NORMAL, RP. Max length = 20.
-        connected_realm_id (ForeginKey): This realms connected realm id. Refrences
-            the connected realm index.
+        play_style (CharField): Is the realm NORMAL, RP. Max length = 20.
     """
 
     population_choices = [
@@ -47,22 +47,21 @@ class Realm(models.Model):
         ("HK", "Hong Kong"),
         ("MU", "Macau"),
     ]
-
+    connected_realm_id = models.ForeignKey(
+        "connectedRealmsIndex", on_delete=models.CASCADE
+    )
+    population = models.CharField(
+        max_length=20, help_text="Low, Medium, High, Full", choices=population_choices
+    )
     realm_id = models.DecimalField(
         max_digits=4, decimal_places=0, help_text="Realm specific id", primary_key=True
     )
     name = models.CharField(max_length=30, help_text="Ex: Illidan, Stormrage, ...")
-    population = models.CharField(
-        max_length=20, help_text="Low, Medium, High, Full", choices=population_choices
-    )
     region = models.CharField(
         max_length=30, help_text="North America, Europe, ...", choices=region_choices
     )
     timezone = models.CharField(max_length=40)
-    type = models.CharField(max_length=7, help_text="Normal, RP")
-    connected_realm_id = models.ForeignKey(
-        "connectedRealmsIndex", on_delete=models.CASCADE
-    )
+    play_style = models.CharField(max_length=7, help_text="Normal, RP")
 
     def __str__(self):
         return self.name
@@ -74,8 +73,7 @@ class ConnectedRealmsIndex(models.Model):
     Attribute:
         connected_realm_id (IntegerField): The connected realm id.
     """
-    connected_realm_id = models.IntegerField(help_text="Id for the connected realms"
-    )
+    connected_realm_id = models.IntegerField(help_text="Id for the connected realms", primary_key=True)
 
 
 class Auction(models.Model):
@@ -117,8 +115,19 @@ class ItemBonus(models.Model):
         effect (CharField): The effect of the item bonus. Max length = 50.
     """
     id = models.IntegerField(primary_key=True)
-    effect = models.CharField(max_length=50)
 
+class ItemModifier(models.Model):
+    """The model of all item modifiers.
+
+        An item can have multiple modifiers with different types and values.
+
+    Attributes:
+        type (int): Found in "type": int inside of auctions modifiers list.
+        value (int): Found in "value": int inside of auctions modifiers list.
+    """
+    id = models.AutoField(primary_key=True)
+    type = models.IntegerField(blank=True, null=True)
+    value = models.IntegerField(blank=True, null=True)
 
 class ProfessionIndex(models.Model):
     """The model for all professions.
