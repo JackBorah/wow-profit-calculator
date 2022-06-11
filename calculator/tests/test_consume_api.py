@@ -29,12 +29,10 @@ class TestConsumeApi(TestCase):
     def setUpTestData(cls):
         ConnectedRealmsIndex.objects.create(connected_realm_id=1)
 
-    @responses.activate
-    def test_consume_realm_yield_correct(self):
+    def test_consume_realm_yield_success(self):
         """Unit test for consume_realm."""
-        responses.get(
-            urls["search_realm"].format(region="us"),
-            json={
+
+        self.us_region_api.connected_realm_search = MagicMock(return_value={
                 "results": [
                     {
                         "data": {
@@ -52,10 +50,10 @@ class TestConsumeApi(TestCase):
                         }
                     }
                 ]
-            },
-        )
+            })
+
         connected_realm_id = ConnectedRealmsIndex.objects.get(connected_realm_id=1)
-        search_results = next(consume_api.consume_realm(self.us_region_api))
+        consume_output = next(consume_api.consume_realm(self.us_region_api))
         expected_yield = {
             "connected_realm_id": connected_realm_id,
             "population": "FULL",
@@ -66,7 +64,7 @@ class TestConsumeApi(TestCase):
             "play_style": "NORMAL",
         }
 
-        self.assertDictEqual(expected_yield, search_results)
+        self.assertDictEqual(expected_yield, consume_output)
 
     def test_insert_realm_success(self):
         connected_realm_id = ConnectedRealmsIndex.objects.get(connected_realm_id=1)
@@ -84,7 +82,7 @@ class TestConsumeApi(TestCase):
         consume_api.insert_realm(self.us_region_api)
 
         record = Realm.objects.get(realm_id=2)
-        
+
         self.assertEqual(consume_realm_results.get('connected_realm_id').connected_realm_id, record.connected_realm_id)
         self.assertEqual(consume_realm_results.get('population'), record.population)
         self.assertEqual(consume_realm_results.get('realm_id'), record.realm_id)
@@ -93,3 +91,5 @@ class TestConsumeApi(TestCase):
         self.assertEqual(consume_realm_results.get('timezone'), record.timezone)
         self.assertEqual(consume_realm_results.get('play_style'), record.play_style)
         
+    def test_consume_connected_realms_index_success(self):
+        pass
