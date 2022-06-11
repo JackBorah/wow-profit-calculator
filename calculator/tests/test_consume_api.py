@@ -1,7 +1,7 @@
 """Tests for the consume_api.py module"""
 from unittest.mock import MagicMock
-from django.test import TestCase
 import responses
+from django.test import TestCase
 from getwowdata import urls
 from getwowdata import WowApi
 from calculator.models import *
@@ -92,4 +92,23 @@ class TestConsumeApi(TestCase):
         self.assertEqual(consume_realm_results.get('play_style'), record.play_style)
         
     def test_consume_connected_realms_index_success(self):
-        pass
+        self.us_region_api.connected_realm_search = MagicMock(return_value={
+                "results": [
+                    {
+                        "data": {
+                            "id": 1,
+                            "population": {"type": "FULL"},
+                        }
+                    }
+                ]
+            })
+        consume_index_output = next(consume_api.consume_connected_realms_index(self.us_region_api))
+        expected_yield = 1
+        self.assertEqual(expected_yield, consume_index_output)
+
+    def test_insert_connected_realms_index_success(self):
+        consume_index_results = 1
+        consume_api.consume_connected_realms_index = MagicMock(return_value=[consume_index_results])
+        consume_api.insert_connected_realms_index(self.us_region_api)
+        record = ConnectedRealmsIndex.objects.get(connected_realm_id=1)
+        self.assertEqual(consume_index_results, record.connected_realm_id)
