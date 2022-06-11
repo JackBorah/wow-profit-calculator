@@ -1,12 +1,13 @@
 from django.test import TestCase
-from calculator import WowApiWrapper
+from dotenv import load_dotenv
 import os
 # Create your tests here.
 
 
-
+"""
 class Test_environment_variables_set(TestCase):
-    
+    load_dotenv()
+
     def test_postgres_USER_environment_variable_set(self):
         try:
             os.environ["WPC_postgres_username"]
@@ -31,3 +32,4 @@ class Test_environment_variables_set(TestCase):
         except KeyError:
             self.fail("Django debug environment variable not set")
 
+"""

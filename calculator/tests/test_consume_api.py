@@ -1,12 +1,11 @@
 """Tests for the consume_api.py module"""
+from unittest.mock import MagicMock
 from django.test import TestCase
 import responses
 from getwowdata import urls
 from getwowdata import WowApi
 from calculator.models import *
-from calculator.consume_api import *
-
-
+from calculator import consume_api
 
 class TestConsumeApi(TestCase):
     ###consume functions
@@ -56,7 +55,7 @@ class TestConsumeApi(TestCase):
             },
         )
         connected_realm_id = ConnectedRealmsIndex.objects.get(connected_realm_id=1)
-        search_results = next(consume_realm(us_region_api))
+        search_results = next(consume_api.consume_realm(self.us_region_api))
         expected_yield = {
             "connected_realm_id": connected_realm_id,
             "population": "FULL",
@@ -68,3 +67,29 @@ class TestConsumeApi(TestCase):
         }
 
         self.assertDictEqual(expected_yield, search_results)
+
+    def test_insert_realm_success(self):
+        connected_realm_id = ConnectedRealmsIndex.objects.get(connected_realm_id=1)
+        consume_realm_results = {
+            "connected_realm_id": connected_realm_id,
+            "population": "FULL",
+            "realm_id": 2,
+            "name": "TestServer",
+            "region": "North America",
+            "timezone": "America/New_York",
+            "play_style": "NORMAL",
+        }
+
+        consume_api.consume_realm = MagicMock(return_value = [consume_realm_results])
+        consume_api.insert_realm(self.us_region_api)
+
+        record = Realm.objects.get(realm_id=2)
+        
+        self.assertEqual(consume_realm_results.get('connected_realm_id').connected_realm_id, record.connected_realm_id)
+        self.assertEqual(consume_realm_results.get('population'), record.population)
+        self.assertEqual(consume_realm_results.get('realm_id'), record.realm_id)
+        self.assertEqual(consume_realm_results.get('name'), record.name)
+        self.assertEqual(consume_realm_results.get('region'), record.region)
+        self.assertEqual(consume_realm_results.get('timezone'), record.timezone)
+        self.assertEqual(consume_realm_results.get('play_style'), record.play_style)
+        
