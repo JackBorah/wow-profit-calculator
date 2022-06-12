@@ -1,6 +1,5 @@
 import os
 import sys
-from pprint import pprint
 from dotenv import load_dotenv
 from getwowdata import WowApi
 import django
@@ -22,7 +21,7 @@ kr_region_api = WowApi("kr", "en_US")
 region_api_list = [us_region_api, eu_region_api, kr_region_api]
 
 
-def consume_realm(region_api: WowApi) -> tuple:
+def consume_realm(region_api: WowApi) -> dict:
     """Consumes the WoW region_api and finds the values to be inserted into the db.
 
     Args:
@@ -47,15 +46,15 @@ def consume_realm(region_api: WowApi) -> tuple:
             region = realm["region"]["name"]["en_US"]
             timezone = realm["timezone"]
             play_style = realm["type"]["type"]
-            yield (
-                connected_realm_id,
-                population,
-                realm_id,
-                name,
-                region,
-                timezone,
-                play_style,
-            )
+            yield {
+                'connected_realm_id':connected_realm_id,
+                'population':population,
+                'realm_id':realm_id,
+                'name':name,
+                'region':region,
+                'timezone':timezone,
+                'play_style':play_style,
+            }
 
 
 def insert_realm(region_api: WowApi):
@@ -66,13 +65,13 @@ def insert_realm(region_api: WowApi):
     """
     for data in consume_realm(region_api):
         record = models.Realm(
-            connected_realm_id=data[0],
-            population=data[1],
-            realm_id=data[2],
-            name=data[3],
-            region=data[4],
-            timezone=data[5],
-            play_style=data[6],
+            connected_realm = data.get('connected_realm_id'),
+            population = data.get('population'),
+            realm_id = data.get('realm_id'),
+            name = data.get('name'),
+            region = data.get('region'),
+            timezone = data.get('timezone'),
+            play_style = data.get('play_style'),
         )
         record.save()
 
@@ -101,11 +100,11 @@ def insert_connected_realms_index(region_api: WowApi):
 
 
 def consume_auctions(region_api: WowApi, connected_realm_id: int) -> tuple:
-    """Yields all auctions from an region_api.
+    """Yields all auctions fields from an region_api.
 
     Args:
         region_api (WowApi): A WowApi object.
-        connected_realm_id (int): The id of a connected realm.
+        connected_realm_id (int): The id of the connected realm where the auctions will come from.
     """
     json = region_api.get_auctions(connected_realm_id)
     for auction in json["auctions"]:
@@ -123,46 +122,48 @@ def consume_auctions(region_api: WowApi, connected_realm_id: int) -> tuple:
         )
         item = models.Item.objects.get(id=auction.get("item").get("id"))
         pet_level = auction.get("item").get("pet_level")
-        for bonus in auction.get("item").get("bonus_lists"):
-            item_bonus_list.append(models.ItemBonus.objects.filter(id=bonus))
-        for modifier in auction.get("item").get("modifiers"):
-            item_modifier_list.append(
-                models.ItemModifier.objects.filter(
-                    modifier_type=modifier.get("type"), value=modifier.get("value")
-                )
-            )
-        yield (
-            auction_id,
-            buyout,
-            bid,
-            unit_price,
-            quantity,
-            time_left,
-            connected_realm_id,
-            item,
-            pet_level,
-            item_bonus_list,
-            item_modifier_list,
-        )
+        if auction.get("item").get("bonus_lists"):
+            item_bonus_list = auction.get("item").get("bonus_lists")
+        if auction.get("item").get("modifiers"):
+            item_modifier_list = auction.get("item").get("modifiers")
+        yield {
+            'auction_id':auction_id,
+            'buyout':buyout,
+            'bid':bid,
+            'unit_price':unit_price,
+            'quantity':quantity,
+            'time_left':time_left,
+            'connected_realm_id':connected_realm_id,
+            'item':item,
+            'pet_level':pet_level,
+            'item_bonus_list':item_bonus_list,
+            'item_modifier_list':item_modifier_list,
+        }
 
 
 def insert_auction(region_api: WowApi, connected_realm_id: WowApi):
     for data in consume_auctions(region_api, connected_realm_id):
-        record = models.Auction(
-            auction_id=data[0],
-            buyout=data[1],
-            bid=data[2],
-            unit_price=data[3],
-            quantity=data[4],
-            time_left=data[5],
-            connected_realm_id=data[6],
-            item=data[7],
-            pet_level=data[8],
-            item_bonus_list=data[9],
-            item_modifier_list=data[10],
+        print(data)
+        auction = models.Auction(
+            auction_id=data['auction_id'],
+            buyout=data['buyout'],
+            bid=data['bid'],
+            unit_price=data['unit_price'],
+            quantity=data['quantity'],
+            time_left=data['time_left'],
+            connected_realm_id=data['connected_realm_id'],
+            item=data['item'],
+            pet_level=data['pet_level'],
         )
-        record.save()
-
+        auction.save()
+        for bonus_id in data[9]:
+            bonus = models.ItemBonus(id = bonus_id)
+            bonus.save()
+            bonus.auctions.add(auction)
+        for modifier_dict in data[10]:
+            modifier = models.ItemModifier(modifier_type = modifier_dict['type'], value = modifier_dict['value'])
+            modifier.save()
+            modifier.auctions.add(auction)
 
 def consume_item_bonus(region_api: WowApi, connected_realm_id: int) -> tuple:
     """Yields all item bonuses from auctions.
@@ -292,9 +293,9 @@ def insert_all_item(region_api: WowApi):
 
 
 if __name__ == "__main__":
-    insert_connected_realms_index(us_region_api)
-    insert_realm(us_region_api)
-    insert_all_item(us_region_api)
+#    insert_connected_realms_index(us_region_api)
+#    insert_realm(us_region_api)
+#    insert_all_item(us_region_api)
     insert_item_bonus(us_region_api, 4)
     insert_item_modifiers(us_region_api, 4)
     insert_auction(us_region_api, 4)

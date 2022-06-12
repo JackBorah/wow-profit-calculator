@@ -1,5 +1,5 @@
+"""All models used in the crafting calculator."""
 from django.db import models
-from django.urls import reverse
 
 
 class Realm(models.Model):
@@ -47,7 +47,7 @@ class Realm(models.Model):
         ("HK", "Hong Kong"),
         ("MU", "Macau"),
     ]
-    connected_realm_id = models.ForeignKey(
+    connected_realm = models.ForeignKey(
         "connectedRealmsIndex", on_delete=models.CASCADE
     )
     population = models.CharField(
@@ -75,7 +75,6 @@ class ConnectedRealmsIndex(models.Model):
     """
     connected_realm_id = models.IntegerField(help_text="Id for the connected realms", primary_key=True)
 
-
 class Auction(models.Model):
     """The model for all auctions from all servers.
 
@@ -91,21 +90,23 @@ class Auction(models.Model):
         timestamp (DateField): The timestamp of when the auction was added to the db.
         connected_realm_id (ForeginKey): The connected realm id that this auction comes from.
         item (ForeginKey): The item being auctioned.
+        pet_level (IntegerField): The level of the pet being sold, if applicable. 
         item_bonus_list (ManyToManyField): The bonus list of the auctioned item.
             Can be null.
+        item_modifier_list (ManyToManyField): The modifier list of the auctioned item.
     """
     auction_id = models.IntegerField(primary_key=True)
     buyout = models.IntegerField(blank=True, null=True)
     bid = models.IntegerField(blank=True, null=True)
     unit_price = models.IntegerField(blank=True, null=True)
     quantity = models.IntegerField()
+    time_left = models.CharField(max_length=9)
     timestamp = models.DateField(auto_now_add=True)
     connected_realm_id = models.ForeignKey(
         "ConnectedRealmsIndex", on_delete=models.CASCADE
     )
     item = models.ForeignKey("item", on_delete=models.CASCADE)
-    item_bonus_list = models.ManyToManyField("ItemBonus")
-
+    pet_level = models.IntegerField(blank=True, null=True)
 
 class ItemBonus(models.Model):
     """The model of all item bonuses.
@@ -115,6 +116,7 @@ class ItemBonus(models.Model):
         effect (CharField): The effect of the item bonus. Max length = 50.
     """
     id = models.IntegerField(primary_key=True)
+    auctions = models.ManyToManyField("Auction", blank=True)
 
 class ItemModifier(models.Model):
     """The model of all item modifiers.
@@ -122,12 +124,14 @@ class ItemModifier(models.Model):
         An item can have multiple modifiers with different types and values.
 
     Attributes:
-        type (int): Found in "type": int inside of auctions modifiers list.
-        value (int): Found in "value": int inside of auctions modifiers list.
+        id (AutoField): An incrementing number. Primary key.
+        type (IntegerField): Found in "type": int inside of auctions modifiers list.
+        value (IntegerField): Found in "value": int inside of auctions modifiers list.
     """
     id = models.AutoField(primary_key=True)
-    type = models.IntegerField(blank=True, null=True)
+    modifier_type = models.IntegerField(blank=True, null=True)
     value = models.IntegerField(blank=True, null=True)
+    item_modifier_list = models.ManyToManyField("Auction", blank=True)
 
 class ProfessionIndex(models.Model):
     """The model for all professions.
