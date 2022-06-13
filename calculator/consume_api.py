@@ -123,9 +123,11 @@ def consume_auctions(region_api: WowApi, connected_realm_id: int) -> tuple:
         item = models.Item.objects.get(id=auction.get("item").get("id"))
         pet_level = auction.get("item").get("pet_level")
         if auction.get("item").get("bonus_lists"):
-            item_bonus_list = auction.get("item").get("bonus_lists")
+            for bonus_id in auction.get("item").get("bonus_lists"):
+                item_bonus_list.append(bonus_id)
         if auction.get("item").get("modifiers"):
-            item_modifier_list = auction.get("item").get("modifiers")
+            for modifier in auction.get("item").get("modifiers"):
+                item_modifier_list.append(modifier)
         yield {
             'auction_id':auction_id,
             'buyout':buyout,
@@ -143,7 +145,6 @@ def consume_auctions(region_api: WowApi, connected_realm_id: int) -> tuple:
 
 def insert_auction(region_api: WowApi, connected_realm_id: WowApi):
     for data in consume_auctions(region_api, connected_realm_id):
-        print(data)
         auction = models.Auction(
             auction_id=data['auction_id'],
             buyout=data['buyout'],
@@ -156,14 +157,10 @@ def insert_auction(region_api: WowApi, connected_realm_id: WowApi):
             pet_level=data['pet_level'],
         )
         auction.save()
-        for bonus_id in data[9]:
-            bonus = models.ItemBonus(id = bonus_id)
-            bonus.save()
-            bonus.auctions.add(auction)
-        for modifier_dict in data[10]:
-            modifier = models.ItemModifier(modifier_type = modifier_dict['type'], value = modifier_dict['value'])
-            modifier.save()
-            modifier.auctions.add(auction)
+        for bonus_object in data['item_bonus_list']:
+            auction.ItemBonus_set.add(bonus_object)
+        for modifier_obj in data['item_modifier_list']:
+            auction.ItemModifier_set.add(modifier_obj)
 
 def consume_item_bonus(region_api: WowApi, connected_realm_id: int) -> tuple:
     """Yields all item bonuses from auctions.
