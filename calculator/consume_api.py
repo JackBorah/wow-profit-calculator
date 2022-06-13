@@ -3,6 +3,7 @@ import sys
 from dotenv import load_dotenv
 from getwowdata import WowApi
 import django
+from pprint import pprint
 
 load_dotenv()
 
@@ -21,7 +22,7 @@ kr_region_api = WowApi("kr", "en_US")
 region_api_list = [us_region_api, eu_region_api, kr_region_api]
 
 
-def consume_realm(region_api: WowApi) -> dict:
+def consume_realm(region_api: WowApi) -> list:
     """Consumes the WoW region_api and finds the values to be inserted into the db.
 
     Args:
@@ -46,7 +47,7 @@ def consume_realm(region_api: WowApi) -> dict:
             region = realm["region"]["name"]["en_US"]
             timezone = realm["timezone"]
             play_style = realm["type"]["type"]
-            yield {
+            yield [{
                 'connected_realm_id':connected_realm_id,
                 'population':population,
                 'realm_id':realm_id,
@@ -54,7 +55,7 @@ def consume_realm(region_api: WowApi) -> dict:
                 'region':region,
                 'timezone':timezone,
                 'play_style':play_style,
-            }
+            }]
 
 
 def insert_realm(region_api: WowApi):
@@ -63,7 +64,9 @@ def insert_realm(region_api: WowApi):
     Args:
         region_api (Wowregion_api): The region_api being consumed.
     """
+    pprint(consume_realm(region_api))
     for data in consume_realm(region_api):
+        pprint(data)
         record = models.Realm(
             connected_realm = data.get('connected_realm_id'),
             population = data.get('population'),
@@ -99,7 +102,7 @@ def insert_connected_realms_index(region_api: WowApi):
         record.save()
 
 
-def consume_auctions(region_api: WowApi, connected_realm_id: int) -> tuple:
+def consume_auctions(region_api: WowApi, connected_realm_id: int) -> list:
     """Yields all auctions fields from an region_api.
 
     Args:
@@ -124,11 +127,13 @@ def consume_auctions(region_api: WowApi, connected_realm_id: int) -> tuple:
         pet_level = auction.get("item").get("pet_level")
         if auction.get("item").get("bonus_lists"):
             for bonus_id in auction.get("item").get("bonus_lists"):
-                item_bonus_list.append(bonus_id)
+                bonus_obj = models.ItemBonus.objects.get_or_create(id = bonus_id)
+                item_bonus_list.append(bonus_obj)
         if auction.get("item").get("modifiers"):
             for modifier in auction.get("item").get("modifiers"):
-                item_modifier_list.append(modifier)
-        yield {
+                modifier_obj = models.ItemModifier.objects.get_or_create(modifier_type = modifier['type'], value = modifier['value'])
+                item_modifier_list.append(modifier_obj)
+        yield [{
             'auction_id':auction_id,
             'buyout':buyout,
             'bid':bid,
@@ -140,13 +145,15 @@ def consume_auctions(region_api: WowApi, connected_realm_id: int) -> tuple:
             'pet_level':pet_level,
             'item_bonus_list':item_bonus_list,
             'item_modifier_list':item_modifier_list,
-        }
+        }]
 
 
 def insert_auction(region_api: WowApi, connected_realm_id: WowApi):
+    pprint(consume_auctions(region_api, connected_realm_id))
     for data in consume_auctions(region_api, connected_realm_id):
+        pprint(data)
         auction = models.Auction(
-            auction_id=data['auction_id'],
+            auction_id=data.get('auction_id'),
             buyout=data['buyout'],
             bid=data['bid'],
             unit_price=data['unit_price'],
@@ -157,10 +164,14 @@ def insert_auction(region_api: WowApi, connected_realm_id: WowApi):
             pet_level=data['pet_level'],
         )
         auction.save()
-        for bonus_object in data['item_bonus_list']:
-            auction.ItemBonus_set.add(bonus_object)
-        for modifier_obj in data['item_modifier_list']:
-            auction.ItemModifier_set.add(modifier_obj)
+        for bonus_id in data['item_bonus_list']:
+            models.ItemBonus.auctions.create(id = bonus_id)
+        for modifier in data['item_modifier_list']:
+            #Change consume function to get or create the bonus and modifiers records then pass them to
+            #this function so that this functions only purpose is to insert and the consume is to only
+            #prepare the data for insertion. Django get_or_create may help
+            #The consume test will have to be altered to cope with the changes.
+            models.ItemModifier.auctions.create(modifier_type = modifier.get('type'), value = modifier.get('value'))
 
 def consume_item_bonus(region_api: WowApi, connected_realm_id: int) -> tuple:
     """Yields all item bonuses from auctions.

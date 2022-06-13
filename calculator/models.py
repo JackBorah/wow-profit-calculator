@@ -131,7 +131,7 @@ class ItemModifier(models.Model):
     id = models.AutoField(primary_key=True)
     modifier_type = models.IntegerField(blank=True, null=True)
     value = models.IntegerField(blank=True, null=True)
-    item_modifier_list = models.ManyToManyField("Auction", blank=True)
+    auctions = models.ManyToManyField("Auction", blank=True)
 
 class ProfessionIndex(models.Model):
     """The model for all professions.

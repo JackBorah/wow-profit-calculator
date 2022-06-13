@@ -28,13 +28,14 @@ class TestConsumeApi(TestCase):
 
     @classmethod
     def setUpTestData(cls):
+        """Inserts testing records into a testing db."""
         ConnectedRealmsIndex.objects.create(connected_realm_id=1)
         ItemBonus.objects.create(id=1)
         ItemModifier.objects.create(modifier_type=1, value=1)
         Item.objects.create(id = 1, name = 'item_test')
 
     def test_consume_realm_yield_success(self):
-        """Unit test for consume_realm."""
+        """Unit test for consume_realm correctly returning values."""
 
         self.us_region_api.connected_realm_search = MagicMock(
             return_value={
@@ -70,11 +71,12 @@ class TestConsumeApi(TestCase):
             "play_style": "NORMAL",
         }
 
-        self.assertDictEqual(expected_yield, consume_output)
+        self.assertDictEqual(expected_yield, consume_output[0])
 
     def test_insert_realm_success(self):
+        """Unit test for insert_realm correctly inserting values into db."""
         connected_realm_id = ConnectedRealmsIndex.objects.get(connected_realm_id=1)
-        consume_realm_results = {
+        consume_realm_results = [{
             "connected_realm_id": connected_realm_id,
             "population": "FULL",
             "realm_id": 2,
@@ -82,9 +84,9 @@ class TestConsumeApi(TestCase):
             "region": "North America",
             "timezone": "America/New_York",
             "play_style": "NORMAL",
-        }
+        }]
 
-        consume_api.consume_realm = MagicMock(return_value=[consume_realm_results])
+        consume_api.consume_realm = MagicMock(return_value=consume_realm_results)
         consume_api.insert_realm(self.us_region_api)
 
         record = Realm.objects.get(realm_id=2)
@@ -101,6 +103,7 @@ class TestConsumeApi(TestCase):
         self.assertEqual(consume_realm_results.get("play_style"), record.play_style)
 
     def test_consume_connected_realms_index_success(self):
+        """Unit test for connected_realm_index returning correct values"""
         self.us_region_api.connected_realm_search = MagicMock(
             return_value={
                 "results": [
@@ -120,6 +123,7 @@ class TestConsumeApi(TestCase):
         self.assertEqual(expected_yield, consume_index_output)
 
     def test_insert_connected_realms_index_success(self):
+        """Unit test for insert_connected_realms_index correctly inserting into db."""
         consume_index_results = 1
         consume_api.consume_connected_realms_index = MagicMock(
             return_value=[consume_index_results]
@@ -129,8 +133,8 @@ class TestConsumeApi(TestCase):
         self.assertEqual(consume_index_results, record.connected_realm_id)
 
     def test_consume_auctions_success(self):
-        self.us_region_api.get_auctions = MagicMock(
-            return_value={
+        """Unit test for consume_auctions yielding correct values."""
+        mock_get_auctions_return = {
                 "auctions": {
                     "id": 1,
                     "buyout": 1,
@@ -145,11 +149,15 @@ class TestConsumeApi(TestCase):
                     }
                 }
             }
-        )
+        self.us_region_api.get_auctions = MagicMock(
+            return_value=mock_get_auctions_return)
         consume_auctions_output = next(consume_api.consume_auctions(self.mock_connected_realm_id))
 
         item_obj = Item.objects.get(id=1)
         connected_realm_obj = ConnectedRealmsIndex.objects.get(connected_realm_id=1)
+        item_bonus_list = [ItemBonus.objects.get()]
+        item_modifier_list = [ItemModifier.objects.filter(modifier_type=1).filter(value=1)]
+
         expected_yield = {'auction_id':1,
             'buyout':1,
             'bid':1,
@@ -159,12 +167,33 @@ class TestConsumeApi(TestCase):
             'connected_realm_id':connected_realm_obj,
             'item':item_obj,
             'pet_level':1,
-            'item_bonus_list':[1,2,3],
-            'item_modifier_list':{'type':1, 'value':1},}
+            'item_bonus_list':item_bonus_list,
+            'item_modifier_list':item_modifier_list}
         self.assertEqual(consume_auctions_output, expected_yield)
 
-    def test_consume_auctions_success(self):
-        pass
+    def test_insert_auctions_success(self):
+        """Unit test for correctly inserting auctions into db."""
+        item_obj = Item.objects.get(id=1)
+        connected_realm_obj = ConnectedRealmsIndex.objects.get(connected_realm_id=1)
+        
+        mock_auction_input = [{'auction_id':1,
+            'buyout':1,
+            'bid':1,
+            'unit_price':1,
+            'quantity':1,
+            'time_left':'SHORT',
+            'connected_realm_id':connected_realm_obj,
+            'item':item_obj,
+            'pet_level':1,
+            'item_bonus_list':[1,2,3],
+            'item_modifier_list':{'type':1, 'value':1},}]
+        consume_api.consume_auctions = MagicMock(return_value = mock_auction_input)
+
+        consume_api.insert_auction(self.us_region_api, self.mock_connected_realm_id)
+        inserted_record = Auction.objects.get(auction_id = 1)
+
+        for field in mock_auction_input.keys(): 
+            self.assertEqual(mock_auction_input.get(field), inserted_record.values().get(field))
 
     def test_consume_auctions_success(self):
         pass
