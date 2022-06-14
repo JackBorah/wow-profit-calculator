@@ -1,5 +1,7 @@
 """Tests for the consume_api.py module"""
+import datetime
 from unittest.mock import MagicMock
+from psycopg2 import connect
 import responses
 from django.test import TestCase
 from getwowdata import urls
@@ -20,6 +22,7 @@ class TestConsumeApi(TestCase):
 
     region = "us"
     mock_connected_realm_id = 1
+    current_date = datetime.datetime.now()
     responses.post(
         urls["access_token"].format(region=region),
         json={"access_token": "0000000000000000000000000000000000"},
@@ -71,12 +74,12 @@ class TestConsumeApi(TestCase):
             "play_style": "NORMAL",
         }
 
-        self.assertDictEqual(expected_yield, consume_output[0])
+        self.assertDictEqual(expected_yield, consume_output)
 
     def test_insert_realm_success(self):
         """Unit test for insert_realm correctly inserting values into db."""
         connected_realm_id = ConnectedRealmsIndex.objects.get(connected_realm_id=1)
-        consume_realm_results = [{
+        consume_realm_results = {
             "connected_realm_id": connected_realm_id,
             "population": "FULL",
             "realm_id": 2,
@@ -84,23 +87,27 @@ class TestConsumeApi(TestCase):
             "region": "North America",
             "timezone": "America/New_York",
             "play_style": "NORMAL",
-        }]
-
-        consume_api.consume_realm = MagicMock(return_value=consume_realm_results)
+        }
+        
+        #The return value is wrapped in a list to simulate a generator object
+        consume_api.consume_realm = MagicMock(return_value=[consume_realm_results])
         consume_api.insert_realm(self.us_region_api)
 
-        record = Realm.objects.get(realm_id=2)
+        record = Realm.objects.filter(realm_id=2)
+        record_fields = record.values().get()
 
-        self.assertEqual(
-            consume_realm_results.get("connected_realm_id").connected_realm_id,
-            record.connected_realm_id,
-        )
-        self.assertEqual(consume_realm_results.get("population"), record.population)
-        self.assertEqual(consume_realm_results.get("realm_id"), record.realm_id)
-        self.assertEqual(consume_realm_results.get("name"), record.name)
-        self.assertEqual(consume_realm_results.get("region"), record.region)
-        self.assertEqual(consume_realm_results.get("timezone"), record.timezone)
-        self.assertEqual(consume_realm_results.get("play_style"), record.play_style)
+        expected_record = {
+            "connected_realm_id": 1,
+            "population": "FULL",
+            "realm_id": 2,
+            "name": "TestServer",
+            "region": "North America",
+            "timezone": "America/New_York",
+            "play_style": "NORMAL",
+        }
+
+        for field in record_fields:
+            self.assertEqual(expected_record.get(field), record_fields.get(field))
 
     def test_consume_connected_realms_index_success(self):
         """Unit test for connected_realm_index returning correct values"""
@@ -175,8 +182,10 @@ class TestConsumeApi(TestCase):
         """Unit test for correctly inserting auctions into db."""
         item_obj = Item.objects.get(id=1)
         connected_realm_obj = ConnectedRealmsIndex.objects.get(connected_realm_id=1)
-        
-        mock_auction_input = [{'auction_id':1,
+        item_bonus_list = [ItemBonus.objects.get()]
+        item_modifier_list = [ItemModifier.objects.filter(modifier_type=1).filter(value=1).get()]
+
+        mock_auction_input = {'auction_id':1,
             'buyout':1,
             'bid':1,
             'unit_price':1,
@@ -185,15 +194,44 @@ class TestConsumeApi(TestCase):
             'connected_realm_id':connected_realm_obj,
             'item':item_obj,
             'pet_level':1,
-            'item_bonus_list':[1,2,3],
-            'item_modifier_list':{'type':1, 'value':1},}]
-        consume_api.consume_auctions = MagicMock(return_value = mock_auction_input)
+            'item_bonus_list':item_bonus_list,
+            'item_modifier_list':item_modifier_list,
+            'timestamp':self.current_date}
+        
+        #Mocked input is wrapped in a list to mock a generator object
+        consume_api.consume_auctions = MagicMock(return_value = [mock_auction_input])
 
         consume_api.insert_auction(self.us_region_api, self.mock_connected_realm_id)
-        inserted_record = Auction.objects.get(auction_id = 1)
+        record = Auction.objects.filter(auction_id = 1)
+        record_fields = record.values().get()
 
-        for field in mock_auction_input.keys(): 
-            self.assertEqual(mock_auction_input.get(field), inserted_record.values().get(field))
+        record_bonus_set = record.get().itembonus_set.all().first()
+        record_modifier_set = record.get().itemmodifier_set.all().first()
+        expected_record = {'auction_id':1,
+            'buyout':1,
+            'bid':1,
+            'unit_price':1,
+            'quantity':1,
+            'time_left':'SHORT',
+            'connected_realm_id':1,
+            'item_id':1,
+            'pet_level':1,
+            'item_bonus_list':item_bonus_list,
+            'item_modifier_list':item_modifier_list,
+            'timestamp':record_fields.get('timestamp')}
+
+        self.assertEqual(expected_record.get('auction_id'), record_fields.get('auction_id'))
+        self.assertEqual(expected_record.get('buyout'), record_fields.get('buyout'))
+        self.assertEqual(expected_record.get('bid'), record_fields.get('bid'))
+        self.assertEqual(expected_record.get('unit_price'), record_fields.get('unit_price'))
+        self.assertEqual(expected_record.get('quantity'), record_fields.get('quantity'))
+        self.assertEqual(expected_record.get('time_left'), record_fields.get('time_left'))
+        self.assertEqual(expected_record.get('timestamp'), record_fields.get('timestamp'))
+        self.assertEqual(expected_record.get('connected_realm_id'), record_fields.get('connected_realm_id'))
+        self.assertEqual(expected_record.get('item_id'), record_fields.get('item_id'))
+        self.assertEqual(expected_record.get('pet_level'), record_fields.get('pet_level'))
+        self.assertEqual(expected_record.get('item_bonus_list')[0], record_bonus_set)
+        self.assertEqual(expected_record.get('item_modifier_list')[0], record_modifier_set)
 
     def test_consume_auctions_success(self):
         pass
