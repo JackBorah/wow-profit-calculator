@@ -152,7 +152,7 @@ class TestConsumeApi(TestCase):
                     'item':{'id':1,
                         'pet_level':1,
                         'bonus_lists':[1,2,3],
-                        'modifiers': {'type':1, 'value':1}
+                        'modifiers': [{'type':1, 'value':1}]
                     }
                 }
             }
@@ -233,17 +233,31 @@ class TestConsumeApi(TestCase):
         self.assertEqual(expected_record.get('item_bonus_list')[0], record_bonus_set)
         self.assertEqual(expected_record.get('item_modifier_list')[0], record_modifier_set)
 
-    def test_consume_auctions_success(self):
-        pass
+    def test_consume_item_bonus_success(self):
+        self.us_region_api.get_auctions = MagicMock(return_value = {"auctions": [{'item':{'id':1,'bonus_lists':[3],}}]})
+        actual_yield = next(consume_api.consume_item_bonus(self.us_region_api, self.mock_connected_realm_id))
+        expected_yield = 3
+        self.assertEqual(expected_yield, actual_yield)
 
-    def test_consume_auctions_success(self):
-        pass
+    def test_insert_item_bonus_success(self):
+        consume_api.consume_item_bonus = MagicMock(return_value = [3])
+        consume_api.insert_item_bonus(self.us_region_api, self.mock_connected_realm_id)
+        actual_record = ItemBonus.objects.get(id=3)
+        expected_record = ItemBonus(id=3)
+        self.assertEqual(expected_record, actual_record)
 
-    def test_consume_auctions_success(self):
-        pass
+    def test_consume_item_modifiers_success(self):
+        self.us_region_api.get_auctions = MagicMock(return_value = {"auctions": [{'item':{'modifiers': [{'type':3, 'value':3}],}}]})
+        actual_yield = next(consume_api.consume_item_modifiers(self.us_region_api,self.mock_connected_realm_id))
+        expected_yield = (3, 3)
+        self.assertEqual(expected_yield, actual_yield)
 
-    def test_consume_auctions_success(self):
-        pass
+    def test_insert_item_modifiers_success(self):
+        consume_api.consume_item_modifiers = MagicMock(return_value = [(3, 3)])
+        consume_api.insert_item_modifiers(self.us_region_api, self.mock_connected_realm_id)
+        actual_record = ItemModifier.objects.get(modifier_type = 3)
+        expected_record = ItemModifier(id=2, modifier_type=3, value=3)
+        self.assertEqual(expected_record, actual_record)
 
     def test_consume_auctions_success(self):
         pass

@@ -10,7 +10,7 @@ class Realm(models.Model):
             Each element is a (key, value) tuple.
         region_choices (list): The possible realm regions like ('NA', 'North America').
             Eacg element is a (key, value) tuple.
-        connected_realm_id (ForeginKey): This realms connected realm id. Refrences
+        connected_realm (ForeginKey): This realms connected realm id. Refrences
             the connected realm index.
         population (CharField): The amount of players on the realm. One of
             population_choices. Max length = 20.
@@ -88,7 +88,7 @@ class Auction(models.Model):
             Value is in g*sscc format.
         quantity (IntegerField): The number of items posted in an auction.
         timestamp (DateField): The timestamp of when the auction was added to the db.
-        connected_realm_id (ForeginKey): The connected realm id that this auction comes from.
+        connected_realm (ForeginKey): The connected realm id that this auction comes from.
         item (ForeginKey): The item being auctioned.
         pet_level (IntegerField): The level of the pet being sold, if applicable. 
         item_bonus_list (ManyToManyField): The bonus list of the auctioned item.
@@ -101,8 +101,8 @@ class Auction(models.Model):
     unit_price = models.IntegerField(blank=True, null=True)
     quantity = models.IntegerField()
     time_left = models.CharField(max_length=9)
-    timestamp = models.DateField(auto_now_add=True)
-    connected_realm_id = models.ForeignKey(
+    timestamp = models.DateTimeField(auto_now_add=True)
+    connected_realm = models.ForeignKey(
         "ConnectedRealmsIndex", on_delete=models.CASCADE
     )
     item = models.ForeignKey("item", on_delete=models.CASCADE)
