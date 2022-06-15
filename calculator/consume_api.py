@@ -125,11 +125,11 @@ def consume_auctions(region_api: WowApi, connected_realm_id: int) -> list:
         pet_level = auction.get("item").get("pet_level")
         if auction.get("item").get("bonus_lists"):
             for bonus_id in auction.get("item").get("bonus_lists"):
-                bonus_obj = models.ItemBonus.objects.get_or_create(id = bonus_id)
+                bonus_obj, bool = models.ItemBonus.objects.get_or_create(id = bonus_id)
                 item_bonus_list.append(bonus_obj)
         if auction.get("item").get("modifiers"):
             for modifier in auction.get("item").get("modifiers"):
-                modifier_obj = models.ItemModifier.objects.get_or_create(modifier_type = modifier['type'], value = modifier['value']).get()
+                modifier_obj, bool = models.ItemModifier.objects.get_or_create(modifier_type = modifier['type'], value = modifier['value'])
                 item_modifier_list.append(modifier_obj)
         yield {
             'auction_id':auction_id,
@@ -234,20 +234,34 @@ def insert_item_modifiers(region_api: WowApi, connected_realm_id: int):
 
 
 def consume_profession_index(region_api: WowApi) -> tuple:
-    pass
-
+    json = region_api.get_profession_index()
+    for profession in json['professions']:
+        id = profession.get('id')
+        name = profession.get('name')
+        yield {'name':name, 'id':id}
 
 def insert_profession_index(region_api: WowApi):
-    pass
+    for data in consume_profession_index(region_api):
+        record = models.ProfessionIndex(name=data.get('name'), id=data.get('id'))
+        record.save()
 
 
-def consume_profession_teir(region_api: WowApi) -> tuple:
-    pass
+def consume_profession_tier(region_api: WowApi, profession_id: int) -> dict:
+    json = region_api.get_profession_tiers(profession_id)
+    profession_obj = models.ProfessionIndex.objects.get(id=profession_id)
+    for tier in json['skill_tiers']:
+        name = tier.get('name')
+        id = tier.get('id')
+        yield {'id': id, 'name':name, 'profession': profession_obj}
 
 
-def insert_profession_teir(region_api: WowApi):
-    pass
-
+def insert_profession_tier(region_api: WowApi, profession_id: int):
+    for tier in consume_profession_tier(region_api, profession_id):
+        profession_obj = models.ProfessionIndex.objects.get(id=profession_id)
+        name = tier.get('name')
+        id = tier.get('id')
+        record = models.ProfessionTier(id=id, name=name, profession=profession_obj)
+        record.save()
 
 def consume_recipe_catagory(region_api: WowApi) -> tuple:
     pass

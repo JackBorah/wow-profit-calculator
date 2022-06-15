@@ -144,13 +144,13 @@ class ProfessionIndex(models.Model):
     name = models.CharField(max_length=50)
 
 
-class ProfessionTeir(models.Model):
-    """The model of all profession teirs. Ex: classic, shadowlands blacksmithing.
+class ProfessionTier(models.Model):
+    """The model of all profession tiers. Ex: classic, shadowlands blacksmithing.
 
     Attributes:
-        id (IntegerField): The teir's id. Primary Key.
-        name (CharField): The teir's name. Max length = 50.
-        profession (ForeginKey): The profession the teir belongs to.
+        id (IntegerField): The tier's id. Primary Key.
+        name (CharField): The tier's name. Max length = 50.
+        profession (ForeginKey): The profession the tier belongs to.
     """
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=50)
@@ -163,11 +163,11 @@ class RecipeCatagory(models.Model):
     Attributes:
         id (IntegerField): The catagory id. Primary Key.
         name (CharField): The catagory name. Max length = 50.
-        profession_teir (ForeginKey): The teir the catagory belongs to.
+        profession_tier (ForeginKey): The tier the catagory belongs to.
     """
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=50)
-    profession_teir = models.ForeignKey("ProfessionTeir", on_delete=models.CASCADE)
+    profession_tier = models.ForeignKey("ProfessionTier", on_delete=models.CASCADE)
 
 
 class Recipe(models.Model):
