@@ -20,6 +20,7 @@ class TestConsumeApi(TestCase):
     region = "us"
     mock_connected_realm_id = 1
     mock_profession_id = 1
+    mock_skill_tier_id = 1
     current_date = datetime.datetime.now()
     responses.post(
         urls["access_token"].format(region=region),
@@ -33,8 +34,13 @@ class TestConsumeApi(TestCase):
         ConnectedRealmsIndex.objects.create(connected_realm_id=1)
         ItemBonus.objects.create(id=1)
         ItemModifier.objects.create(modifier_type=1, value=1)
-        Item.objects.create(id=1, name="item_test")
-        ProfessionIndex.objects.create(id=1, name="Test")
+        item = Item.objects.create(id=1, name="item_test")
+        profession = ProfessionIndex.objects.create(id=1, name="Test Profession")
+        profession_tier = ProfessionTier.objects.create(id=1, name="Test Tier", profession=profession)
+        recipe_category = RecipeCategory.objects.create(id = 1, name = 'Test category', profession_tier=profession_tier)
+        material = Material.objects.create(item=item, quantity=1)
+        recipe = Recipe.objects.create(id=1, name='Test recipe', product = item, recipe_category=recipe_category)
+        recipe.mats.add(material)
 
     def test_consume_realm_yield_success(self):
         """Unit test for consume_realm correctly returning values."""
@@ -365,10 +371,13 @@ class TestConsumeApi(TestCase):
         )
         self.assertEqual(expected_record, actual_record)
 
-    def test_consume_recipe_catagory_success(self):
-        pass
+    def test_consume_recipe_category_success(self):
+        self.us_region_api.get_profession_tier_categories = MagicMock(return_value={'categories':[{'name':'Test Category', 'recipes':[{'name':'Test Recipe', 'id':1}]}]})
+        profession_tier_obj = ProfessionTier.objects.get(id=1)
+        actual_yield = next(consume_api.consume_recipe_category(self.us_region_api, self.mock_profession_id, self.mock_skill_tier_id))
 
-    def test_insert_recipe_catagory_success(self):
+
+    def test_insert_recipe_category_success(self):
         pass
 
     def test_consume_recipe_success(self):

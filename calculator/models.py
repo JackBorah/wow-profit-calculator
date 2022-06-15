@@ -157,15 +157,15 @@ class ProfessionTier(models.Model):
     profession = models.ForeignKey("ProfessionIndex", on_delete=models.CASCADE)
 
 
-class RecipeCatagory(models.Model):
+class RecipeCategory(models.Model):
     """The model for recipe catagories. Ex: consumables
 
     Attributes:
-        id (IntegerField): The catagory id. Primary Key.
-        name (CharField): The catagory name. Max length = 50.
-        profession_tier (ForeginKey): The tier the catagory belongs to.
+        id (IntegerField): The category id. Primary Key.
+        name (CharField): The category name. Max length = 50.
+        profession_tier (ForeginKey): The tier the category belongs to.
     """
-    id = models.IntegerField(primary_key=True)
+    id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=50)
     profession_tier = models.ForeignKey("ProfessionTier", on_delete=models.CASCADE)
 
@@ -177,13 +177,13 @@ class Recipe(models.Model):
         id (IntegerField): The id for a recipe. Primary Key.
         name (CharField): The name for a recipe. Max length = 100.
         product (ForeignKey): The item produced by a recipe.
-        recipeCatagory (ForeginKey): The catagory the recipe belongs to.
+        recipeCategory (ForeginKey): The category the recipe belongs to.
         mats (ManyToManyField): The materials required by the recipe.
     """
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=100)
     product = models.ForeignKey("Item", on_delete=models.CASCADE)
-    recipeCatagory = models.ForeignKey("RecipeCatagory", on_delete=models.CASCADE)
+    recipe_category = models.ForeignKey("RecipeCategory", on_delete=models.CASCADE)
     mats = models.ManyToManyField("Material")
 
 

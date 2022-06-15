@@ -263,19 +263,29 @@ def insert_profession_tier(region_api: WowApi, profession_id: int):
         record = models.ProfessionTier(id=id, name=name, profession=profession_obj)
         record.save()
 
-def consume_recipe_catagory(region_api: WowApi) -> tuple:
+def consume_recipe_category(region_api: WowApi, profession_id: int, skill_tier_id: int) -> tuple:
+    json = region_api.get_profession_tier_categories(profession_id, skill_tier_id)
+    for category in json.get('categories'):
+        category_name = category.get('name')
+        for recipe in category.get('recipes'):
+            recipe_name = recipe.get('name')
+            recipe_id = recipe.get('id')
+            yield {
+                'recipe_name': recipe_name,
+                'recipe_id': recipe_id,
+                'category_name': category_name,
+                'skill_tier_id': skill_tier_id,
+            }
+
+def insert_recipe_category(region_api: WowApi):
     pass
 
 
-def insert_recipe_catagory(region_api: WowApi):
+def consume_recipe_detail(region_api: WowApi) -> tuple:
     pass
 
 
-def consume_recipe(region_api: WowApi) -> tuple:
-    pass
-
-
-def insert_recipe(region_api: WowApi):
+def insert_recipe_detail(region_api: WowApi):
     pass
 
 
