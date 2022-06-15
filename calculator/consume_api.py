@@ -265,6 +265,7 @@ def insert_profession_tier(region_api: WowApi, profession_id: int):
 
 def consume_recipe_category(region_api: WowApi, profession_id: int, skill_tier_id: int) -> tuple:
     json = region_api.get_profession_tier_categories(profession_id, skill_tier_id)
+    skill_tier_obj = models.ProfessionTier.objects.get(id=skill_tier_id)
     for category in json.get('categories'):
         category_name = category.get('name')
         for recipe in category.get('recipes'):
@@ -274,7 +275,7 @@ def consume_recipe_category(region_api: WowApi, profession_id: int, skill_tier_i
                 'recipe_name': recipe_name,
                 'recipe_id': recipe_id,
                 'category_name': category_name,
-                'skill_tier_id': skill_tier_id,
+                'skill_tier_id': skill_tier_obj,
             }
 
 def insert_recipe_category(region_api: WowApi):

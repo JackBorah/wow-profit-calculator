@@ -375,6 +375,13 @@ class TestConsumeApi(TestCase):
         self.us_region_api.get_profession_tier_categories = MagicMock(return_value={'categories':[{'name':'Test Category', 'recipes':[{'name':'Test Recipe', 'id':1}]}]})
         profession_tier_obj = ProfessionTier.objects.get(id=1)
         actual_yield = next(consume_api.consume_recipe_category(self.us_region_api, self.mock_profession_id, self.mock_skill_tier_id))
+        expected_yield = {
+            'recipe_name': 'Test Recipe',
+            'recipe_id': 1,
+            'category_name': 'Test Category',
+            'skill_tier_id': profession_tier_obj,
+        }
+        self.assertDictEqual(expected_yield, actual_yield)
 
 
     def test_insert_recipe_category_success(self):
