@@ -37,7 +37,7 @@ class TestConsumeApi(TestCase):
         item = Item.objects.create(id=1, name="item_test")
         profession = ProfessionIndex.objects.create(id=1, name="Test Profession")
         profession_tier = ProfessionTier.objects.create(id=1, name="Test Tier", profession=profession)
-        recipe_category = RecipeCategory.objects.create(id = 1, name = 'Test category', profession_tier=profession_tier)
+        recipe_category = RecipeCategory.objects.create(name = 'Test category', profession_tier=profession_tier)
         material = Material.objects.create(item=item, quantity=1)
         recipe = Recipe.objects.create(id=1, name='Test recipe', product = item, recipe_category=recipe_category)
         recipe.mats.add(material)
@@ -374,18 +374,36 @@ class TestConsumeApi(TestCase):
     def test_consume_recipe_category_success(self):
         self.us_region_api.get_profession_tier_categories = MagicMock(return_value={'categories':[{'name':'Test Category', 'recipes':[{'name':'Test Recipe', 'id':1}]}]})
         profession_tier_obj = ProfessionTier.objects.get(id=1)
-        actual_yield = next(consume_api.consume_recipe_category(self.us_region_api, self.mock_profession_id, self.mock_skill_tier_id))
-        expected_yield = {
+        category_gen = consume_api.consume_recipe_category(self.us_region_api, self.mock_profession_id, self.mock_skill_tier_id)
+        actual_yield_category_name_and_tier_obj = next(category_gen)
+        actual_yield_recipe_name_and_recipe_id = next(category_gen)
+        expected_yield_category_name_and_tier_obj = {
+            'category_name': 'Test Category',
+            'profession_tier_obj': profession_tier_obj,
+        }
+        expected_yield_recipe_name_and_recipe_id = {
             'recipe_name': 'Test Recipe',
             'recipe_id': 1,
-            'category_name': 'Test Category',
-            'skill_tier_id': profession_tier_obj,
         }
-        self.assertDictEqual(expected_yield, actual_yield)
-
+        self.assertDictEqual(expected_yield_category_name_and_tier_obj, actual_yield_category_name_and_tier_obj)
+        self.assertDictEqual(expected_yield_recipe_name_and_recipe_id, actual_yield_recipe_name_and_recipe_id)
 
     def test_insert_recipe_category_success(self):
-        pass
+        profession_tier_obj = ProfessionTier.objects.get(id=1)
+        mock_recipe_category_input = {            
+            'recipe_name': 'Test Recipe record',
+            'recipe_id': 2,
+            'category_name': 'Test Category record',
+            'profession_tier_obj': profession_tier_obj,}
+        consume_api.consume_recipe_category = MagicMock(return_value = [mock_recipe_category_input])
+        consume_api.insert_recipe_category(self.us_region_api, self.mock_profession_id, self.mock_skill_tier_id)
+        actual_record_category = RecipeCategory.objects.get(name='Test Category record')
+        actual_record_recipe = Recipe.objects.get(id=2)
+        expected_record_category = RecipeCategory(id=2, name=mock_recipe_category_input.get('category_name'), profession_tier=mock_recipe_category_input.get('profession_tier_obj'))
+        expected_record_recipe = Recipe(id = mock_recipe_category_input.get('recipe_id'), name = mock_recipe_category_input.get('recipe_name'), recipe_category = expected_record_category)
+
+        self.assertEqual(expected_record_category, actual_record_category)
+        self.assertEqual(expected_record_recipe, actual_record_recipe)
 
     def test_consume_recipe_success(self):
         pass

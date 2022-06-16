@@ -182,7 +182,7 @@ class Recipe(models.Model):
     """
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=100)
-    product = models.ForeignKey("Item", on_delete=models.CASCADE)
+    product = models.ForeignKey("Item", on_delete=models.CASCADE, null=True, blank=True)
     recipe_category = models.ForeignKey("RecipeCategory", on_delete=models.CASCADE)
     mats = models.ManyToManyField("Material")
 
