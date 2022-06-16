@@ -48,13 +48,13 @@ def consume_realm(region_api: WowApi) -> list:
             timezone = realm["timezone"]
             play_style = realm["type"]["type"]
             yield {
-                'connected_realm_id':connected_realm_id,
-                'population':population,
-                'realm_id':realm_id,
-                'name':name,
-                'region':region,
-                'timezone':timezone,
-                'play_style':play_style,
+                "connected_realm_id": connected_realm_id,
+                "population": population,
+                "realm_id": realm_id,
+                "name": name,
+                "region": region,
+                "timezone": timezone,
+                "play_style": play_style,
             }
 
 
@@ -66,13 +66,13 @@ def insert_realm(region_api: WowApi):
     """
     for data in consume_realm(region_api):
         record = models.Realm(
-            connected_realm = data.get('connected_realm_id'),
-            population = data.get('population'),
-            realm_id = data.get('realm_id'),
-            name = data.get('name'),
-            region = data.get('region'),
-            timezone = data.get('timezone'),
-            play_style = data.get('play_style'),
+            connected_realm=data.get("connected_realm_id"),
+            population=data.get("population"),
+            realm_id=data.get("realm_id"),
+            name=data.get("name"),
+            region=data.get("region"),
+            timezone=data.get("timezone"),
+            play_style=data.get("play_style"),
         )
         record.save()
 
@@ -125,49 +125,52 @@ def consume_auctions(region_api: WowApi, connected_realm_id: int) -> list:
         pet_level = auction.get("item").get("pet_level")
         if auction.get("item").get("bonus_lists"):
             for bonus_id in auction.get("item").get("bonus_lists"):
-                bonus_obj, bool = models.ItemBonus.objects.get_or_create(id = bonus_id)
+                bonus_obj, bool = models.ItemBonus.objects.get_or_create(id=bonus_id)
                 item_bonus_list.append(bonus_obj)
         if auction.get("item").get("modifiers"):
             for modifier in auction.get("item").get("modifiers"):
-                modifier_obj, bool = models.ItemModifier.objects.get_or_create(modifier_type = modifier['type'], value = modifier['value'])
+                modifier_obj, bool = models.ItemModifier.objects.get_or_create(
+                    modifier_type=modifier["type"], value=modifier["value"]
+                )
                 item_modifier_list.append(modifier_obj)
         yield {
-            'auction_id':auction_id,
-            'buyout':buyout,
-            'bid':bid,
-            'unit_price':unit_price,
-            'quantity':quantity,
-            'time_left':time_left,
-            'connected_realm_id':connected_realm_id,
-            'item':item,
-            'pet_level':pet_level,
-            'item_bonus_list':item_bonus_list,
-            'item_modifier_list':item_modifier_list,
+            "auction_id": auction_id,
+            "buyout": buyout,
+            "bid": bid,
+            "unit_price": unit_price,
+            "quantity": quantity,
+            "time_left": time_left,
+            "connected_realm_id": connected_realm_id,
+            "item": item,
+            "pet_level": pet_level,
+            "item_bonus_list": item_bonus_list,
+            "item_modifier_list": item_modifier_list,
         }
 
 
 def insert_auction(region_api: WowApi, connected_realm_id: int):
     for data in consume_auctions(region_api, connected_realm_id):
         auction = models.Auction(
-            auction_id=data.get('auction_id'),
-            buyout=data['buyout'],
-            bid=data['bid'],
-            unit_price=data['unit_price'],
-            quantity=data['quantity'],
-            time_left=data['time_left'],
-            connected_realm=data['connected_realm_id'],
-            item=data['item'],
-            pet_level=data['pet_level'],
+            auction_id=data.get("auction_id"),
+            buyout=data["buyout"],
+            bid=data["bid"],
+            unit_price=data["unit_price"],
+            quantity=data["quantity"],
+            time_left=data["time_left"],
+            connected_realm=data["connected_realm_id"],
+            item=data["item"],
+            pet_level=data["pet_level"],
         )
         auction.save()
-        for bonus_obj in data['item_bonus_list']:
+        for bonus_obj in data["item_bonus_list"]:
             bonus_obj.auctions.add(auction)
-        for modifier_obj in data['item_modifier_list']:
-            #Change consume function to get or create the bonus and modifiers records then pass them to
-            #this function so that this functions only purpose is to insert and the consume is to only
-            #prepare the data for insertion. Django get_or_create may help
-            #The consume test will have to be altered to cope with the changes.
+        for modifier_obj in data["item_modifier_list"]:
+            # Change consume function to get or create the bonus and modifiers records then pass them to
+            # this function so that this functions only purpose is to insert and the consume is to only
+            # prepare the data for insertion. Django get_or_create may help
+            # The consume test will have to be altered to cope with the changes.
             modifier_obj.auctions.add(auction)
+
 
 def consume_item_bonus(region_api: WowApi, connected_realm_id: int) -> tuple:
     """Yields all item bonuses from auctions.
@@ -227,7 +230,9 @@ def insert_item_modifiers(region_api: WowApi, connected_realm_id: int):
         connected_realm_id (int): The id of a connected realm.
     """
     for data in consume_item_modifiers(region_api, connected_realm_id):
-        item_modifiers = models.ItemModifier.objects.filter(modifier_type=data[0], value=data[1])
+        item_modifiers = models.ItemModifier.objects.filter(
+            modifier_type=data[0], value=data[1]
+        )
         if not item_modifiers:  # If no record then add it to table
             record = models.ItemModifier(modifier_type=data[0], value=data[1])
             record.save()
@@ -235,60 +240,72 @@ def insert_item_modifiers(region_api: WowApi, connected_realm_id: int):
 
 def consume_profession_index(region_api: WowApi) -> tuple:
     json = region_api.get_profession_index()
-    for profession in json['professions']:
-        id = profession.get('id')
-        name = profession.get('name')
-        yield {'name':name, 'id':id}
+    for profession in json["professions"]:
+        id = profession.get("id")
+        name = profession.get("name")
+        yield {"name": name, "id": id}
+
 
 def insert_profession_index(region_api: WowApi):
     for data in consume_profession_index(region_api):
-        record = models.ProfessionIndex(name=data.get('name'), id=data.get('id'))
+        record = models.ProfessionIndex(name=data.get("name"), id=data.get("id"))
         record.save()
 
 
 def consume_profession_tier(region_api: WowApi, profession_id: int) -> dict:
     json = region_api.get_profession_tiers(profession_id)
     profession_obj = models.ProfessionIndex.objects.get(id=profession_id)
-    for tier in json['skill_tiers']:
-        name = tier.get('name')
-        id = tier.get('id')
-        yield {'id': id, 'name':name, 'profession': profession_obj}
+    for tier in json["skill_tiers"]:
+        name = tier.get("name")
+        id = tier.get("id")
+        yield {"id": id, "name": name, "profession": profession_obj}
 
 
 def insert_profession_tier(region_api: WowApi, profession_id: int):
     for tier in consume_profession_tier(region_api, profession_id):
         profession_obj = models.ProfessionIndex.objects.get(id=profession_id)
-        name = tier.get('name')
-        id = tier.get('id')
+        name = tier.get("name")
+        id = tier.get("id")
         record = models.ProfessionTier(id=id, name=name, profession=profession_obj)
         record.save()
 
-def consume_recipe_category(region_api: WowApi, profession_id: int, skill_tier_id: int) -> tuple:
+
+def consume_recipe_category(
+    region_api: WowApi, profession_id: int, skill_tier_id: int
+) -> tuple:
     json = region_api.get_profession_tier_categories(profession_id, skill_tier_id)
     skill_tier_obj = models.ProfessionTier.objects.get(id=skill_tier_id)
-    for category in json.get('categories'):
-        category_name = category.get('name')
+    for category in json.get("categories"):
+        category_name = category.get("name")
         yield {
-            'category_name': category_name,
-            'profession_tier_obj': skill_tier_obj,}
-        for recipe in category.get('recipes'):
-            recipe_name = recipe.get('name')
-            recipe_id = recipe.get('id')
+            "category_name": category_name,
+            "profession_tier_obj": skill_tier_obj,
+        }
+        for recipe in category.get("recipes"):
+            recipe_name = recipe.get("name")
+            recipe_id = recipe.get("id")
             yield {
-                'recipe_name': recipe_name,
-                'recipe_id': recipe_id,
+                "recipe_name": recipe_name,
+                "recipe_id": recipe_id,
             }
+
 
 def insert_recipe_category(region_api: WowApi, profession_id: int, skill_tier_id: int):
     """Inserts data from recipe category into that model and the name and id into the recipe model."""
     for category in consume_recipe_category(region_api, profession_id, skill_tier_id):
-        category_record, created = models.RecipeCategory.objects.get_or_create(name=category.get('category_name'), profession_tier=category.get('profession_tier_obj'))
+        category_record, created = models.RecipeCategory.objects.get_or_create(
+            name=category.get("category_name"),
+            profession_tier=category.get("profession_tier_obj"),
+        )
         if created:
             category_record.save()
-        if category.get('recipe_name'):
-            recipe_record = models.Recipe(id = category.get('recipe_id'), name = category.get('recipe_name'), recipe_category = category_record)
+        if category.get("recipe_name"):
+            recipe_record = models.Recipe(
+                id=category.get("recipe_id"),
+                name=category.get("recipe_name"),
+                recipe_category=category_record,
+            )
             recipe_record.save()
-
 
 
 def consume_recipe_detail(region_api: WowApi) -> tuple:
@@ -308,32 +325,34 @@ def insert_material(region_api: WowApi):
 
 
 def consume_all_item(region_api: WowApi) -> tuple:
-    """Yields all item data revelant to the item model.
-    """
-    json = region_api.item_search(**{'id':f'({0},)'})
-    while json['results']: #as long as json is redefined by the loop body and that is visable to the while loop it will work
-        last_id = json['results'][-1]['data']['id']
-        json = region_api.item_search(**{'id':f'({last_id},)', 'orderby': 'id', '_pageSize': 1000})
-        for item in json['results']:
-            item_id = item['data']['id']
-            name = item['data']['name']['en_US']
+    """Yields all item data revelant to the item model."""
+    json = region_api.item_search(**{"id": f"({0},)"})
+    while json[
+        "results"
+    ]:  # as long as json is redefined by the loop body and that is visable to the while loop it will work
+        last_id = json["results"][-1]["data"]["id"]
+        json = region_api.item_search(
+            **{"id": f"({last_id},)", "orderby": "id", "_pageSize": 1000}
+        )
+        for item in json["results"]:
+            item_id = item["data"]["id"]
+            name = item["data"]["name"]["en_US"]
             yield (item_id, name)
 
 
 def insert_all_item(region_api: WowApi):
-    """Inserts all items into the Item model.
-    """
+    """Inserts all items into the Item model."""
     count = 0
     for data in consume_all_item(region_api):
-        record = models.Item(id = data[0], name = data[1])
-        print(f'\r{count}', end='')
+        record = models.Item(id=data[0], name=data[1])
+        print(f"\r{count}", end="")
         record.save()
 
 
 if __name__ == "__main__":
-#    insert_connected_realms_index(us_region_api)
-#    insert_realm(us_region_api)
-#    insert_all_item(us_region_api)
+    #    insert_connected_realms_index(us_region_api)
+    #    insert_realm(us_region_api)
+    #    insert_all_item(us_region_api)
     insert_item_bonus(us_region_api, 4)
     insert_item_modifiers(us_region_api, 4)
     insert_auction(us_region_api, 4)
