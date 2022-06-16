@@ -1,3 +1,4 @@
+from itertools import product
 import os
 import sys
 from dotenv import load_dotenv
@@ -165,10 +166,6 @@ def insert_auction(region_api: WowApi, connected_realm_id: int):
         for bonus_obj in data["item_bonus_list"]:
             bonus_obj.auctions.add(auction)
         for modifier_obj in data["item_modifier_list"]:
-            # Change consume function to get or create the bonus and modifiers records then pass them to
-            # this function so that this functions only purpose is to insert and the consume is to only
-            # prepare the data for insertion. Django get_or_create may help
-            # The consume test will have to be altered to cope with the changes.
             modifier_obj.auctions.add(auction)
 
 
@@ -308,20 +305,34 @@ def insert_recipe_category(region_api: WowApi, profession_id: int, skill_tier_id
             recipe_record.save()
 
 
-def consume_recipe_detail(region_api: WowApi) -> tuple:
-    pass
+def consume_recipe(region_api: WowApi, recipe_id: int) -> tuple:
+    json = region_api.get_recipe(recipe_id)
+    #recipe id, recipe name, product foreignKey, material(s), material quantity
+    recipe_id = json.get('id')
+    recipe_name = json.get('name')
+    product_id = json.get('crafted_item').get('id')
+    product_obj = models.Item.objects.get(id=product_id)
+    product_quantity = json.get('crafted_quantity').get('value')
+    materials_list = []
+    for mat in json.get('reagents'):
+        mat_item_obj = models.Item.objects.get(id = mat.get('reagent').get('id'))
+        mat_item_quantity = mat.get('quantity')
+        mat_obj, created = models.Material.objects.get_or_create(item = mat_item_obj, quantity = mat_item_quantity)
+        materials_list.append(mat_obj)
+    return {
+        'recipe_name':recipe_name,
+        'product_obj':product_obj,
+        'product_quantity':product_quantity,
+        'materials_list':materials_list
+    }
 
-
-def insert_recipe_detail(region_api: WowApi):
-    pass
-
-
-def consume_material(region_api: WowApi) -> tuple:
-    pass
-
-
-def insert_material(region_api: WowApi):
-    pass
+def insert_recipe(region_api: WowApi, recipe_id: int):
+    recipe = consume_recipe(region_api, recipe_id)
+    record = models.Recipe.objects.get(id=recipe_id)
+    record.product = recipe.get('product_obj')
+    for material in recipe.get('materials_list'):
+        record.mats.add(material)
+        record.save()
 
 
 def consume_all_item(region_api: WowApi) -> tuple:

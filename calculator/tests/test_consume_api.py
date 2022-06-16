@@ -18,6 +18,7 @@ from calculator import consume_api
 
 class TestConsumeApi(TestCase):
     region = "us"
+    mock_recipe_id = 1
     mock_connected_realm_id = 1
     mock_profession_id = 1
     mock_skill_tier_id = 1
@@ -441,17 +442,42 @@ class TestConsumeApi(TestCase):
         self.assertEqual(expected_record_category, actual_record_category)
         self.assertEqual(expected_record_recipe, actual_record_recipe)
 
-    def test_consume_recipe_detail_success(self):
-        pass
+    def test_consume_recipe_success(self):
+        mock_json = {
+            'id':1,
+            'name':'Test recipe',
+            'crafted_item': {'id':1},
+            'crafted_quantity': {'value':1},
+            'reagents': [{'reagent': {'id':1}, 'quantity':1}]
+        }
+        self.us_region_api.get_recipe = MagicMock(return_value = mock_json)
+        product_obj = Item.objects.get(id=1)
+        material_obj = Material.objects.get(pk=1)
+        actual_yield = consume_api.consume_recipe(self.us_region_api, self.mock_recipe_id)
+        expected_yield = {
+            'recipe_name': mock_json.get('name'),
+            'product_obj': product_obj,
+            'product_quantity': mock_json.get('crafted_quantity').get('value'),
+            'materials_list': [material_obj]
+        }
+        self.assertDictEqual(expected_yield, actual_yield)
 
-    def test_insert_recipe_detail_success(self):
-        pass
-
-    def test_consume_material_success(self):
-        pass
-
-    def test_insert_material_success(self):
-        pass
+    def test_insert_recipe_success(self):
+        product_obj = Item.objects.get(id=1)
+        material_obj = Material.objects.get(pk=1)
+        recipe_category_obj = RecipeCategory.objects.get(id=1)
+        recipe_input = {
+            'recipe_name': 'Test recipe',
+            'product_obj': product_obj,
+            'product_quantity': 1,
+            'materials_list': [material_obj]
+        }
+        consume_api.consume_recipe = MagicMock(return_value=recipe_input)
+        consume_api.insert_recipe(self.us_region_api, self.mock_recipe_id)
+        actual_record = Recipe.objects.get(id=1)
+        expected_record = Recipe(id=self.mock_recipe_id, name = 'Test recipe', product=product_obj, recipe_category=RecipeCategory.objects.get(id=1))
+        expected_record.mats.add(material_obj)
+        self.assertEqual(expected_record, actual_record)
 
     def test_consume_all_item_success(self):
         pass
