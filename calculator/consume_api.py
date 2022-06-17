@@ -330,6 +330,7 @@ def insert_recipe(region_api: WowApi, recipe_id: int):
     recipe = consume_recipe(region_api, recipe_id)
     record = models.Recipe.objects.get(id=recipe_id)
     record.product = recipe.get('product_obj')
+    record.product_quantity = recipe.get('product_quantity')
     for material in recipe.get('materials_list'):
         record.mats.add(material)
         record.save()
@@ -341,29 +342,26 @@ def consume_all_item(region_api: WowApi) -> tuple:
     while json[
         "results"
     ]:  # as long as json is redefined by the loop body and that is visable to the while loop it will work
+        for item in json["results"]:
+            item_id = item["data"]["id"]
+            name = item["data"]["name"]["en_US"]
+            yield {'item_id': item_id, 'name':name}
         last_id = json["results"][-1]["data"]["id"]
         json = region_api.item_search(
             **{"id": f"({last_id},)", "orderby": "id", "_pageSize": 1000}
         )
-        for item in json["results"]:
-            item_id = item["data"]["id"]
-            name = item["data"]["name"]["en_US"]
-            yield (item_id, name)
-
 
 def insert_all_item(region_api: WowApi):
     """Inserts all items into the Item model."""
     count = 0
     for data in consume_all_item(region_api):
-        record = models.Item(id=data[0], name=data[1])
-        print(f"\r{count}", end="")
+        record = models.Item(id=data.get('item_id'), name=data.get('name'))
+        print(f"\r{count} items queried", end="")
         record.save()
 
 
 if __name__ == "__main__":
-    #    insert_connected_realms_index(us_region_api)
-    #    insert_realm(us_region_api)
-    #    insert_all_item(us_region_api)
-    insert_item_bonus(us_region_api, 4)
-    insert_item_modifiers(us_region_api, 4)
+    insert_connected_realms_index(us_region_api)
+    insert_realm(us_region_api)
+    insert_all_item(us_region_api)
     insert_auction(us_region_api, 4)

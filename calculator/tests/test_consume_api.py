@@ -45,7 +45,7 @@ class TestConsumeApi(TestCase):
         )
         material = Material.objects.create(item=item, quantity=1)
         recipe = Recipe.objects.create(
-            id=1, name="Test recipe", product=item, recipe_category=recipe_category
+            id=1, name="Test recipe", product=item,product_quantity = 1, recipe_category=recipe_category
         )
         recipe.mats.add(material)
 
@@ -475,12 +475,42 @@ class TestConsumeApi(TestCase):
         consume_api.consume_recipe = MagicMock(return_value=recipe_input)
         consume_api.insert_recipe(self.us_region_api, self.mock_recipe_id)
         actual_record = Recipe.objects.get(id=1)
-        expected_record = Recipe(id=self.mock_recipe_id, name = 'Test recipe', product=product_obj, recipe_category=RecipeCategory.objects.get(id=1))
+        expected_record = Recipe(id=self.mock_recipe_id, name = 'Test recipe', product=product_obj,product_quantity = recipe_input.get('product_quantity'), recipe_category=RecipeCategory.objects.get(id=1))
         expected_record.mats.add(material_obj)
         self.assertEqual(expected_record, actual_record)
 
     def test_consume_all_item_success(self):
-        pass
+        mock_items_json = {
+            'results':[
+                {
+                    'data':{'id':1, 'name':{'en_US':'Test item 1'}}
+                },
+                {
+                    'data':{'id':2, 'name':{'en_US':'Test item 2'}}
+                },
+                {
+                    'data':{'id':3, 'name':{'en_US':'Test item 3'}}
+                }
+            ]
+        }
+
+        self.us_region_api.item_search = MagicMock(return_value = mock_items_json)
+        generator_obj_items = consume_api.consume_all_item(self.us_region_api)
+        actual_yield_1 = next(generator_obj_items)
+        actual_yield_2 = next(generator_obj_items)
+        actual_yield_3 = next(generator_obj_items)
+        expected_yield_1 = {'item_id':1, 'name':'Test item 1'}
+        expected_yield_2 = {'item_id':2, 'name':'Test item 2'}
+        expected_yield_3 = {'item_id':3, 'name':'Test item 3'}
+        self.assertDictEqual(expected_yield_1,actual_yield_1)
+        self.assertDictEqual(expected_yield_2,actual_yield_2)
+        self.assertDictEqual(expected_yield_3,actual_yield_3)
 
     def test_insert_all_item_success(self):
-        pass
+        mock_consume_item_yield = {'item_id':2, 'name':'Test item 1'}
+        consume_api.consume_all_item = MagicMock(return_value = [mock_consume_item_yield])
+        consume_api.insert_all_item(self.us_region_api)
+        actual_record = Item.objects.get(id=2)
+        expected_record = Item(id=mock_consume_item_yield.get('item_id'), name=mock_consume_item_yield.get('name'))
+        self.assertEqual(expected_record, actual_record)
+
