@@ -1,10 +1,8 @@
-from itertools import product
 import os
 import sys
 from dotenv import load_dotenv
 from getwowdata import WowApi
 import django
-from pprint import pprint
 
 load_dotenv()
 
@@ -23,8 +21,8 @@ kr_region_api = WowApi("kr", "en_US")
 region_api_list = [us_region_api, eu_region_api, kr_region_api]
 
 
-def consume_realm(region_api: WowApi) -> list:
-    """Consumes the WoW region_api and finds the values to be inserted into the db.
+def consume_realm(region_api: WowApi) -> dict:
+    """Consumes the WoW realm API and yields the values to be inserted into the db.
 
     Args:
         region_api (Wowregion_api): The region_api that will be pulled from.
@@ -38,7 +36,7 @@ def consume_realm(region_api: WowApi) -> list:
     for connected_realm in json[
         "results"
     ]:  # each entry in results is a connected realm cluster
-        connected_realm_id = models.ConnectedRealmsIndex.objects.get(
+        connected_realm_obj = models.ConnectedRealmsIndex.objects.get(
             connected_realm_id=connected_realm["data"]["id"]
         )
         population = connected_realm["data"]["population"]["type"]
@@ -49,7 +47,7 @@ def consume_realm(region_api: WowApi) -> list:
             timezone = realm["timezone"]
             play_style = realm["type"]["type"]
             yield {
-                "connected_realm_id": connected_realm_id,
+                "connected_realm_obj": connected_realm_obj,
                 "population": population,
                 "realm_id": realm_id,
                 "name": name,
@@ -59,15 +57,15 @@ def consume_realm(region_api: WowApi) -> list:
             }
 
 
-def insert_realm(region_api: WowApi):
-    """Saves the record to the attached db.
+def insert_realm(region_api: WowApi) -> None:
+    """Saves the realm records to the Realm db.
 
     Args:
         region_api (Wowregion_api): The region_api being consumed.
     """
     for data in consume_realm(region_api):
         record = models.Realm(
-            connected_realm=data.get("connected_realm_id"),
+            connected_realm=data.get("connected_realm_obj"),
             population=data.get("population"),
             realm_id=data.get("realm_id"),
             name=data.get("name"),
@@ -78,7 +76,7 @@ def insert_realm(region_api: WowApi):
         record.save()
 
 
-def consume_connected_realms_index(region_api: WowApi) -> tuple:
+def consume_connected_realms_index(region_api: WowApi) -> dict:
     """Yields all connected_realm id's from an region_api.
 
     Args:
@@ -90,7 +88,7 @@ def consume_connected_realms_index(region_api: WowApi) -> tuple:
         yield int(connected_realm["data"]["id"])
 
 
-def insert_connected_realms_index(region_api: WowApi):
+def insert_connected_realms_index(region_api: WowApi) -> None:
     """Inserts connected_realm_id into the ConnectedRealmsIndex model.
 
     Args:
@@ -101,8 +99,12 @@ def insert_connected_realms_index(region_api: WowApi):
         record.save()
 
 
-def consume_auctions(region_api: WowApi, connected_realm_id: int) -> list:
+def consume_auctions(region_api: WowApi, connected_realm_id: int) -> dict:
     """Yields all auctions fields from an region_api.
+
+    Yields auction data to be inserted by insert_auctions. Also
+    creates item bonuses or item modifiers if they are not in the
+    db already.
 
     Args:
         region_api (WowApi): A WowApi object.
@@ -149,7 +151,13 @@ def consume_auctions(region_api: WowApi, connected_realm_id: int) -> list:
         }
 
 
-def insert_auction(region_api: WowApi, connected_realm_id: int):
+def insert_auction(region_api: WowApi, connected_realm_id: int) -> None:
+    """Inserts auction records from conusme_auction into the auction model
+    
+    Args:
+        region_api (WowApi): A WowApi object.
+        connected_realm_id (int): The id of the connected realm where the auctions will come from.
+    """
     for data in consume_auctions(region_api, connected_realm_id):
         auction = models.Auction(
             auction_id=data.get("auction_id"),
@@ -169,7 +177,7 @@ def insert_auction(region_api: WowApi, connected_realm_id: int):
             modifier_obj.auctions.add(auction)
 
 
-def consume_item_bonus(region_api: WowApi, connected_realm_id: int) -> tuple:
+def consume_item_bonus(region_api: WowApi, connected_realm_id: int) -> dict:
     """Yields all item bonuses from auctions.
 
     The results depends on what is currently posted to the auction house. So,
@@ -186,7 +194,7 @@ def consume_item_bonus(region_api: WowApi, connected_realm_id: int) -> tuple:
                 yield bonus_id
 
 
-def insert_item_bonus(region_api: WowApi, connected_realm_id: int):
+def insert_item_bonus(region_api: WowApi, connected_realm_id: int) -> None:
     """Inserts item bonuses into ItemBonus model.
 
     Args:
@@ -219,7 +227,7 @@ def consume_item_modifiers(region_api: WowApi, connected_realm_id: int) -> tuple
                 yield (mod_type, value)
 
 
-def insert_item_modifiers(region_api: WowApi, connected_realm_id: int):
+def insert_item_modifiers(region_api: WowApi, connected_realm_id: int) -> None:
     """Inserts item modifiers into ItemModifier model.
 
     Args:
@@ -235,7 +243,12 @@ def insert_item_modifiers(region_api: WowApi, connected_realm_id: int):
             record.save()
 
 
-def consume_profession_index(region_api: WowApi) -> tuple:
+def consume_profession_index(region_api: WowApi) -> dict:
+    """Yields profession names and id from profession index API.
+
+    Args: 
+        region_api (WowApi): A WowApi object.
+    """
     json = region_api.get_profession_index()
     for profession in json["professions"]:
         id = profession.get("id")
@@ -243,13 +256,24 @@ def consume_profession_index(region_api: WowApi) -> tuple:
         yield {"name": name, "id": id}
 
 
-def insert_profession_index(region_api: WowApi):
+def insert_profession_index(region_api: WowApi) -> None:
+    """Inserts records into the profession index model.
+    
+    Args: 
+        region_api (WowApi): A WowApi object.
+    """
     for data in consume_profession_index(region_api):
         record = models.ProfessionIndex(name=data.get("name"), id=data.get("id"))
         record.save()
 
 
 def consume_profession_tier(region_api: WowApi, profession_id: int) -> dict:
+    """Yields data from profession skill tier API.
+    
+    Args: 
+        region_api (WowApi): A WowApi object.
+        profession_id (int): A professions id. Get from profession index.
+    """
     json = region_api.get_profession_tiers(profession_id)
     profession_obj = models.ProfessionIndex.objects.get(id=profession_id)
     for tier in json["skill_tiers"]:
@@ -258,7 +282,13 @@ def consume_profession_tier(region_api: WowApi, profession_id: int) -> dict:
         yield {"id": id, "name": name, "profession": profession_obj}
 
 
-def insert_profession_tier(region_api: WowApi, profession_id: int):
+def insert_profession_tier(region_api: WowApi, profession_id: int) -> None:
+    """Inserts data from consume_profession_tier into the profession tier model.
+    
+    Args: 
+        region_api (WowApi): A WowApi object.
+        profession_id (int): A professions id. Get from profession index.
+    """
     for tier in consume_profession_tier(region_api, profession_id):
         profession_obj = models.ProfessionIndex.objects.get(id=profession_id)
         name = tier.get("name")
@@ -269,7 +299,14 @@ def insert_profession_tier(region_api: WowApi, profession_id: int):
 
 def consume_recipe_category(
     region_api: WowApi, profession_id: int, skill_tier_id: int
-) -> tuple:
+) -> dict:
+    """Consumes recipe category data from the recipe categories API.
+    
+    Args: 
+        region_api (WowApi): A WowApi object.
+        profession_id (int): A professions id. Get from profession index.
+        skill_tier_id (int): A skill tiers id. Get from profession tiers.
+    """
     json = region_api.get_profession_tier_categories(profession_id, skill_tier_id)
     skill_tier_obj = models.ProfessionTier.objects.get(id=skill_tier_id)
     for category in json.get("categories"):
@@ -287,8 +324,14 @@ def consume_recipe_category(
             }
 
 
-def insert_recipe_category(region_api: WowApi, profession_id: int, skill_tier_id: int):
-    """Inserts data from recipe category into that model and the name and id into the recipe model."""
+def insert_recipe_category(region_api: WowApi, profession_id: int, skill_tier_id: int) -> None:
+    """Inserts data from recipe category into that model and the name and id into the recipe model.
+
+    Args: 
+        region_api (WowApi): A WowApi object.
+        profession_id (int): A professions id. Get from profession index.
+        skill_tier_id (int): A skill tiers id. Get from profession tiers.
+    """
     for category in consume_recipe_category(region_api, profession_id, skill_tier_id):
         category_record, created = models.RecipeCategory.objects.get_or_create(
             name=category.get("category_name"),
@@ -305,7 +348,13 @@ def insert_recipe_category(region_api: WowApi, profession_id: int, skill_tier_id
             recipe_record.save()
 
 
-def consume_recipe(region_api: WowApi, recipe_id: int) -> tuple:
+def consume_recipe(region_api: WowApi, recipe_id: int) -> dict:
+    """Yields data from the recipe API.
+    
+    Args:
+        region_api (WowApi): A WowApi object.
+        recipe_id (int): The id of a recipe. 
+    """
     json = region_api.get_recipe(recipe_id)
     #recipe id, recipe name, product foreignKey, material(s), material quantity
     recipe_id = json.get('id')
@@ -326,7 +375,13 @@ def consume_recipe(region_api: WowApi, recipe_id: int) -> tuple:
         'materials_list':materials_list
     }
 
-def insert_recipe(region_api: WowApi, recipe_id: int):
+def insert_recipe(region_api: WowApi, recipe_id: int) -> None:
+    """Inserts records from consume recipe into the recipe model.
+
+    Args:
+        region_api (WowApi): A WowApi object.
+        recipe_id (int): The id of a recipe. 
+    """
     recipe = consume_recipe(region_api, recipe_id)
     record = models.Recipe.objects.get(id=recipe_id)
     record.product = recipe.get('product_obj')
@@ -336,8 +391,12 @@ def insert_recipe(region_api: WowApi, recipe_id: int):
         record.save()
 
 
-def consume_all_item(region_api: WowApi) -> tuple:
-    """Yields all item data revelant to the item model."""
+def consume_all_item(region_api: WowApi) -> dict:
+    """Yields data for all items.
+    
+    Args:
+        region_api (WowApi): A WowApi object.
+    """
     json = region_api.item_search(**{"id": f"({0},)"})
     while json[
         "results"
@@ -351,8 +410,12 @@ def consume_all_item(region_api: WowApi) -> tuple:
             **{"id": f"({last_id},)", "orderby": "id", "_pageSize": 1000}
         )
 
-def insert_all_item(region_api: WowApi):
-    """Inserts all items into the Item model."""
+def insert_all_item(region_api: WowApi) -> None:
+    """Inserts all items into the Item model.
+    
+    Args: 
+        region_api (WowApi): A WowApi object.
+    """
     count = 0
     for data in consume_all_item(region_api):
         record = models.Item(id=data.get('item_id'), name=data.get('name'))
@@ -361,6 +424,7 @@ def insert_all_item(region_api: WowApi):
 
 
 if __name__ == "__main__":
+    #ConnectedRealmIndex before Realm insert
     insert_connected_realms_index(us_region_api)
     insert_realm(us_region_api)
     insert_all_item(us_region_api)
