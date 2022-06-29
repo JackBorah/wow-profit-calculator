@@ -110,10 +110,6 @@ def consume_auctions(region_api: WowApi, connected_realm_id: int) -> dict:
         region_api (WowApi): A WowApi object.
         connected_realm_id (int): The id of the connected realm where the auctions will come from.
     """
-    #The body of this is taking a long time
-    #Take it apart and time the components
-    #How long is: dict.get(), creating and appending to a list
-    #get_or_create items, yield vs return, how long is the bonus and modifier loops
     connected_realm_obj = models.ConnectedRealmsIndex.objects.get(
         connected_realm_id=connected_realm_id
     )
@@ -125,7 +121,6 @@ def consume_auctions(region_api: WowApi, connected_realm_id: int) -> dict:
     for auction in json["auctions"]:
         #item_modifier_list = []
         item_bonus_list = []
-
         auction_id = auction.get("id")
         buyout = auction.get("buyout")
         bid = auction.get("bid")
@@ -134,6 +129,7 @@ def consume_auctions(region_api: WowApi, connected_realm_id: int) -> dict:
         time_left = auction.get("time_left")
         item, created = all_items.get_or_create(id=auction.get("item").get("id"))
         pet_level = auction.get("item").get("pet_level")
+
         if auction.get("item").get("bonus_lists"):
             for bonus_id in auction.get("item").get("bonus_lists"):
                 bonus_obj, created = all_bonuses.get_or_create(id=bonus_id)
@@ -191,7 +187,8 @@ def insert_auction(region_api: WowApi, connected_realm_id: int) -> None:
         #for modifier_obj in data["item_modifier_list"]:
         #    modifier_obj.auctions.add(auction)
     print(f'Auctions from realm {connected_realm_id} inserted.')
-
+#build a list of auctions and bonuses instead of yielding
+#pass the lists to insert auctions
 
 def consume_item_bonus(region_api: WowApi, connected_realm_id: int) -> dict:
     """Yields all item bonuses from auctions.

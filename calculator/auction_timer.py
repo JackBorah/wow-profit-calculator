@@ -52,7 +52,6 @@ if __name__ == '__main__':
 
     def get_or_create():
         """Significant"""
-
         models.ItemBonus.objects.get_or_create(id=1)
 
     def get_only():
@@ -127,11 +126,11 @@ if __name__ == '__main__':
 
     print('\n')
     #print(timeit.timeit('consume_illidan_auctions()',globals=globals(), number=10)/10)
-    print(timeit.timeit('insert_illidan_auctions()',globals=globals(), number=1)/1) 
+    #print(timeit.timeit('insert_illidan_auctions()',globals=globals(), number=1)/1) 
     #print(timeit.timeit('consume_illidan_auctions_no_yield()',globals=globals(), number=1))
     #print(timeit.timeit('long_for_loop()', globals=globals(), number = 1))
-    #print(timeit.timeit('get_or_create()', globals=globals(), number = 1000) / 1000)
-    #print(timeit.timeit('get_only()', globals=globals(), number = 1000) / 1000)
+    print(timeit.timeit('get_or_create()', globals=globals(), number = 100) / 100)
+    print(timeit.timeit('get_only()', globals=globals(), number = 100) / 100)
     #print(timeit.timeit('get_all()', globals=globals(), number = 1000) / 1000)
     #print(timeit.timeit('queryset_get()', globals=globals(), number = 1000) / 1000)
     #print(timeit.timeit('yield_consumer()', globals=globals(), number = 1000) / 1000)
