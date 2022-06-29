@@ -45,12 +45,12 @@ class TestConsumeApi(TestCase):
         )
         material = Material.objects.create(item=item, quantity=1)
         recipe = Recipe.objects.create(
-            id=1, name="Test recipe", product=item,product_quantity = 1, recipe_category=recipe_category
+            id=1, name="Test recipe", recipe_category=recipe_category
         )
         recipe.mats.add(material)
 
     def test_consume_realm_yield_success(self):
-        """Unit test for consume_realm correctly returning values."""
+        """Unit test for consume_realm correctly yielding values."""
 
         self.us_region_api.connected_realm_search = MagicMock(
             return_value={
@@ -74,10 +74,10 @@ class TestConsumeApi(TestCase):
             }
         )
 
-        connected_realm_id = ConnectedRealmsIndex.objects.get(connected_realm_id=1)
-        consume_output = next(consume_api.consume_realm(self.us_region_api))
+        connected_realm_obj = ConnectedRealmsIndex.objects.get(connected_realm_id=1)
+        actual_yield = next(consume_api.consume_realm(self.us_region_api))
         expected_yield = {
-            "connected_realm_id": connected_realm_id,
+            "connected_realm_obj": connected_realm_obj,
             "population": "FULL",
             "realm_id": 2,
             "name": "TestServer",
@@ -86,13 +86,13 @@ class TestConsumeApi(TestCase):
             "play_style": "NORMAL",
         }
 
-        self.assertDictEqual(expected_yield, consume_output)
+        self.assertDictEqual(expected_yield, actual_yield)
 
     def test_insert_realm_success(self):
         """Unit test for insert_realm correctly inserting values into db."""
-        connected_realm_id = ConnectedRealmsIndex.objects.get(connected_realm_id=1)
+        connected_realm_obj = ConnectedRealmsIndex.objects.get(connected_realm_id=1)
         consume_realm_results = {
-            "connected_realm_id": connected_realm_id,
+            "connected_realm_obj": connected_realm_obj,
             "population": "FULL",
             "realm_id": 2,
             "name": "TestServer",
@@ -446,9 +446,9 @@ class TestConsumeApi(TestCase):
         mock_json = {
             'id':1,
             'name':'Test recipe',
-            'crafted_item': {'id':1},
+            'crafted_item': {'id':1, 'name':'item_test'},
             'crafted_quantity': {'value':1},
-            'reagents': [{'reagent': {'id':1}, 'quantity':1}]
+            'reagents': [{'reagent': {'id':1, 'name':'item_test'}, 'quantity':1}]
         }
         self.us_region_api.get_recipe = MagicMock(return_value = mock_json)
         product_obj = Item.objects.get(id=1)
@@ -456,26 +456,27 @@ class TestConsumeApi(TestCase):
         actual_yield = consume_api.consume_recipe(self.us_region_api, self.mock_recipe_id)
         expected_yield = {
             'recipe_name': mock_json.get('name'),
-            'product_obj': product_obj,
-            'product_quantity': mock_json.get('crafted_quantity').get('value'),
+            'product_list': [product_obj],
+            'product_quantity': (mock_json.get('crafted_quantity').get('value'),),
             'materials_list': [material_obj]
         }
         self.assertDictEqual(expected_yield, actual_yield)
 
     def test_insert_recipe_success(self):
+        #TODO test that this inserts into the mats, product, and recipe models correctly
         product_obj = Item.objects.get(id=1)
         material_obj = Material.objects.get(pk=1)
         recipe_category_obj = RecipeCategory.objects.get(id=1)
         recipe_input = {
             'recipe_name': 'Test recipe',
-            'product_obj': product_obj,
-            'product_quantity': 1,
+            'product_list': [product_obj],
+            'product_quantity': (1,),
             'materials_list': [material_obj]
         }
         consume_api.consume_recipe = MagicMock(return_value=recipe_input)
         consume_api.insert_recipe(self.us_region_api, self.mock_recipe_id)
         actual_record = Recipe.objects.get(id=1)
-        expected_record = Recipe(id=self.mock_recipe_id, name = 'Test recipe', product=product_obj,product_quantity = recipe_input.get('product_quantity'), recipe_category=RecipeCategory.objects.get(id=1))
+        expected_record = Recipe(id=self.mock_recipe_id, name = 'Test recipe', product=product_obj, recipe_category=RecipeCategory.objects.get(id=1))
         expected_record.mats.add(material_obj)
         self.assertEqual(expected_record, actual_record)
 

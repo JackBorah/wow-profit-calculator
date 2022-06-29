@@ -30,23 +30,6 @@ class Realm(models.Model):
         ("Full", "Full"),
     ]
 
-    #Useless?
-    region_choices = [
-        ("NA", "North America"),
-        ("LA", "Latin America"),
-        ("SA", "South America"),
-        ("AU", "Australia"),
-        ("NZ", "New Zealand"),
-        ("EU", "European Union"),
-        ("EE", "Eastern Europe"),
-        ("RU", "Russia"),
-        ("AF", "Africa"),
-        ("ME", "Middle East"),
-        ("SK", "South Korea"),
-        ("TW", "Taiwan"),
-        ("HK", "Hong Kong"),
-        ("MU", "Macau"),
-    ]
     connected_realm = models.ForeignKey(
         "connectedRealmsIndex", on_delete=models.CASCADE
     )
@@ -58,7 +41,7 @@ class Realm(models.Model):
     )
     name = models.CharField(max_length=30, help_text="Ex: Illidan, Stormrage, ...")
     region = models.CharField(
-        max_length=30, help_text="North America, Europe, ...", choices=region_choices
+        max_length=30, help_text="North America, Europe, ..."
     )
     timezone = models.CharField(max_length=40)
     play_style = models.CharField(max_length=7, help_text="Normal, RP")
@@ -95,18 +78,23 @@ class Auction(models.Model):
             Can be null.
         item_modifier_list (ManyToManyField): The modifier list of the auctioned item.
     """
-    auction_id = models.IntegerField(primary_key=True)
-    buyout = models.IntegerField(blank=True, null=True)
-    bid = models.IntegerField(blank=True, null=True)
-    unit_price = models.IntegerField(blank=True, null=True)
+    auction_id = models.BigIntegerField(primary_key=True)
+    buyout = models.BigIntegerField(blank=True, null=True)
+    bid = models.BigIntegerField(blank=True, null=True)
+    unit_price = models.BigIntegerField(blank=True, null=True)
     quantity = models.IntegerField()
-    time_left = models.CharField(max_length=9)
-    timestamp = models.DateTimeField(auto_now_add=True)
+    time_left = models.CharField(max_length=20)
+    timestamp = models.DateTimeField()
     connected_realm = models.ForeignKey(
         "ConnectedRealmsIndex", on_delete=models.CASCADE
     )
     item = models.ForeignKey("item", on_delete=models.CASCADE)
     pet_level = models.IntegerField(blank=True, null=True)
+
+    class Meta:
+        models.UniqueConstraint(fields = ['auction_id', 'timestamp'], name = 'unique_auction_id_and_time')
+
+
 
 class ItemBonus(models.Model):
     """The model of all item bonuses.
@@ -141,7 +129,10 @@ class ProfessionIndex(models.Model):
         name (CharField): The name of the profession. Max_length = 50.
     """
     id = models.IntegerField(primary_key=True)
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=100)
+
+    class Meta:
+        ordering = ['id']
 
 
 class ProfessionTier(models.Model):
@@ -153,8 +144,11 @@ class ProfessionTier(models.Model):
         profession (ForeginKey): The profession the tier belongs to.
     """
     id = models.IntegerField(primary_key=True)
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=100)
     profession = models.ForeignKey("ProfessionIndex", on_delete=models.CASCADE)
+
+    class Meta:
+        ordering = ['profession', 'id']
 
 
 class RecipeCategory(models.Model):
@@ -166,7 +160,7 @@ class RecipeCategory(models.Model):
         profession_tier (ForeginKey): The tier the category belongs to.
     """
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=100)
     profession_tier = models.ForeignKey("ProfessionTier", on_delete=models.CASCADE)
 
 
@@ -182,8 +176,6 @@ class Recipe(models.Model):
     """
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=100)
-    product = models.ForeignKey("Item", on_delete=models.CASCADE, null=True, blank=True)
-    product_quantity = models.IntegerField(null=True, blank=True)
     recipe_category = models.ForeignKey("RecipeCategory", on_delete=models.CASCADE)
     mats = models.ManyToManyField("Material")
 
@@ -198,6 +190,20 @@ class Material(models.Model):
     item = models.ForeignKey("Item", on_delete=models.CASCADE)
     quantity = models.IntegerField()
 
+class Product(models.Model):
+    """The model for all recipe products.
+    
+    Attributes:
+        item (ForeginKey): The product.
+        recipe (ForeignKey): The recipe the item comes from.
+        quantity_min (IntegerField): The minimum amount of a product produced. 
+        quantity_max (IntegerField): The maximum amount of an item produced.
+    """
+    item = models.ForeignKey('Item', on_delete=models.CASCADE)
+    #A single recipe can have many products. Such as an alliance and horde version.
+    recipe = models.ForeignKey('Recipe', on_delete=models.CASCADE)
+    min_quantity = models.IntegerField()
+    max_quantity = models.IntegerField()
 
 class Item(models.Model):
     """The model for all items.
@@ -207,4 +213,4 @@ class Item(models.Model):
         name (CharField): The name of an item. Max length = 100.
     """
     id = models.IntegerField(primary_key=True)
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, blank=True, null=True)
