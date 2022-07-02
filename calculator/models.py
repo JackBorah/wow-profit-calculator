@@ -56,7 +56,7 @@ class ConnectedRealmsIndex(models.Model):
     Attribute:
         connected_realm_id (IntegerField): The connected realm id.
     """
-    connected_realm_id = models.IntegerField(help_text="Id for the connected realms", primary_key=True)
+    connected_realm_id = models.IntegerField(help_text="Id for the connected realms", primary_key=True,db_index=True)
 
 class Auction(models.Model):
     """The model for all auctions from all servers.
@@ -90,6 +90,7 @@ class Auction(models.Model):
     )
     item = models.ForeignKey("item", on_delete=models.CASCADE)
     pet_level = models.IntegerField(blank=True, null=True)
+    bonuses = models.ManyToManyField("ItemBonus", blank=True)
 
     class Meta:
         models.UniqueConstraint(fields = ['auction_id', 'timestamp'], name = 'unique_auction_id_and_time')
@@ -103,8 +104,7 @@ class ItemBonus(models.Model):
         id (IntegerField): The item bonus id. Primary key.
         effect (CharField): The effect of the item bonus. Max length = 50.
     """
-    id = models.IntegerField(primary_key=True)
-    auctions = models.ManyToManyField("Auction", blank=True)
+    id = models.IntegerField(primary_key=True, db_index=True)
 
 class ItemModifier(models.Model):
     """The model of all item modifiers.
@@ -212,5 +212,5 @@ class Item(models.Model):
         id (IntegerField): The unique id for a item. Primary Key.
         name (CharField): The name of an item. Max length = 100.
     """
-    id = models.IntegerField(primary_key=True)
+    id = models.IntegerField(primary_key=True, db_index=True)
     name = models.CharField(max_length=100, blank=True, null=True)

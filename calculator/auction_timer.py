@@ -1,6 +1,7 @@
 import os
 import sys
 import timeit
+import multiprocessing as mp
 from dotenv import load_dotenv
 import django
 from pprint import pprint
@@ -14,11 +15,11 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "wowprofitcalculator.settings")
 
 django.setup()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     from calculator import consume_api, models
 
-    test_dict = {'a':1, 'b':2, 'c':3, 'z':4, 'y':5, 'z':6}
+    test_dict = {"a": 1, "b": 2, "c": 3, "z": 4, "y": 5, "z": 6}
 
     def consume_illidan_auctions():
         """
@@ -26,29 +27,29 @@ if __name__ == '__main__':
         Get auctions from blizzard api
         Loop through all auctions but do nothing to them.
         """
-        us_realm_api = getwowdata.WowApi('us')
+        us_realm_api = getwowdata.WowApi("us")
         illidan_id = 57
         count = 0
         values = consume_api.consume_auctions(us_realm_api, illidan_id)
         for auction in values:
-            #count += 1
-            #print(f'\r{count} auctions consumed', end='')
+            # count += 1
+            # print(f'\r{count} auctions consumed', end='')
             pass
 
     def consume_illidan_auctions_no_yield():
-        us_realm_api = getwowdata.WowApi('us')
+        us_realm_api = getwowdata.WowApi("us")
         illidan_id = 57
         json = us_realm_api.get_auctions(illidan_id)
-        for auction in json['auctions']:
+        for auction in json["auctions"]:
             pass
 
     def long_for_loop():
         count = 0
         for i in range(140000):
-            #count += 1
-            #print(f'\r{count}', end='')
+            # count += 1
+            # print(f'\r{count}', end='')
             pass
-        #print('\n')
+        # print('\n')
 
     def get_or_create():
         """Significant"""
@@ -90,17 +91,17 @@ if __name__ == '__main__':
 
     def dict_get():
         """Insignificant"""
-        test_dict.get('a')
+        test_dict.get("a")
 
     def dict_index():
         """Insignificant"""
 
-        test_dict['a']
+        test_dict["a"]
 
     def create_list():
         """Insignificant"""
         x = []
-    
+
     def dict_index_many_keys():
         """Insignificant"""
         auction_id = test_dict.get("x")
@@ -114,29 +115,40 @@ if __name__ == '__main__':
         items = models.Item.objects.all()
         for x in items:
             pass
-    
+
     def one_query_per_loop_iteration():
         for x in range(140000):
             item = models.Item.objects.get(id=117373)
 
     def insert_illidan_auctions():
-        us_realm_api = getwowdata.WowApi('us')
+        """Illidan is a large server. Higher sample time."""
+        us_realm_api = getwowdata.WowApi("us")
         illidan_id = 57
-        consume_api.insert_auction(us_realm_api, illidan_id)
+        consume_api.insert_auctions(us_realm_api, illidan_id)
 
-    print('\n')
-    #print(timeit.timeit('consume_illidan_auctions()',globals=globals(), number=10)/10)
-    #print(timeit.timeit('insert_illidan_auctions()',globals=globals(), number=1)/1) 
-    #print(timeit.timeit('consume_illidan_auctions_no_yield()',globals=globals(), number=1))
-    #print(timeit.timeit('long_for_loop()', globals=globals(), number = 1))
-    print(timeit.timeit('get_or_create()', globals=globals(), number = 100) / 100)
-    print(timeit.timeit('get_only()', globals=globals(), number = 100) / 100)
-    #print(timeit.timeit('get_all()', globals=globals(), number = 1000) / 1000)
-    #print(timeit.timeit('queryset_get()', globals=globals(), number = 1000) / 1000)
-    #print(timeit.timeit('yield_consumer()', globals=globals(), number = 1000) / 1000)
-    #print(timeit.timeit('return_consumer()', globals=globals(), number = 1000) / 1000)
-    #print(timeit.timeit('create_list()', globals=globals(), number = 1000))
-    #print(timeit.timeit('dict_index_many_keys()', globals=globals(), number = 1000) / 1000)
-    #print(timeit.timeit('single_query_looped_through()', globals=globals(), number = 10) / 10)
-    #print(timeit.timeit('one_query_per_loop_iteration()', globals=globals(), number = 1) / 1)
+    def insert_winterhoof_auctions():
+        """Winterhoof is a small server. Smaller sample time."""
+        us_realm_api = getwowdata.WowApi("us")
+        winterhoof_id = 4
+        consume_api.insert_auctions(us_realm_api, winterhoof_id)
 
+    if __name__ == "__main__":
+        print("\n")
+        # print(timeit.timeit('consume_illidan_auctions()',globals=globals(), number=10)/10)
+        # print(timeit.timeit('insert_illidan_auctions()',globals=globals(), number=1)/1)
+        print(
+            timeit.timeit("insert_winterhoof_auctions()", globals=globals(), number=1)
+            / 1
+        )
+        # print(timeit.timeit('consume_illidan_auctions_no_yield()',globals=globals(), number=1))
+        # print(timeit.timeit('long_for_loop()', globals=globals(), number = 1))
+        # print(timeit.timeit("get_or_create()", globals=globals(), number=100) / 100)
+        # print(timeit.timeit("get_only()", globals=globals(), number=100) / 100)
+        # print(timeit.timeit('get_all()', globals=globals(), number = 1000) / 1000)
+        # print(timeit.timeit('queryset_get()', globals=globals(), number = 1000) / 1000)
+        # print(timeit.timeit('yield_consumer()', globals=globals(), number = 1000) / 1000)
+        # print(timeit.timeit('return_consumer()', globals=globals(), number = 1000) / 1000)
+        # print(timeit.timeit('create_list()', globals=globals(), number = 1000))
+        # print(timeit.timeit('dict_index_many_keys()', globals=globals(), number = 1000) / 1000)
+        # print(timeit.timeit('single_query_looped_through()', globals=globals(), number = 10) / 10)
+        # print(timeit.timeit('one_query_per_loop_iteration()', globals=globals(), number = 1) / 1)
