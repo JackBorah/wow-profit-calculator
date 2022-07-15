@@ -1,0 +1,10 @@
+{% extends "base_template.html" %}
+
+{% block body %}
+    <h1>{{ view.kwargs.profession }}</h1>
+    {% for tier in filtered_profession_tier_list %}
+        <a href="{% url 'recipe-categories' request.session.region request.session.realm view.kwargs.profession tier.name %}"><h3>{{ tier.name }}</h3></a>
+    {% empty %}
+        <h3>Error loading profession tiers.</h3>
+    {% endfor %}
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base_template.html" %}
+
+{% block body %}
+    <h1>{{ recipe.name }}</h1>
+    <div id="materials">
+      <h4>Materials</h4>
+      {% for mat in mats_auction_set %}
+        <h5>{{ mat.0.item.name }}  x<span class="matQuantity">{{ mat.0.quantity }}</span></h5>
+        {% if mat.1.0.buyout != None %}
+        <input type="number" id="{{ mat.id }}" class="mat" onchange="calculatePL()" value="{{ mat.1.0.buyout }}"/>
+        {% elif mat.1.0.unit_price != None %}
+        <input type="number" id="{{ mat.id }}" class="mat" onchange="calculatePL()" value="{{ mat.1.0.unit_price }}"/>
+        {% else %}
+        <input type="number" id="{{ mat.id }}" class="mat" onchange="calculatePL()" value="{{ mat.1.0.bid }}"/>
+        {% endif %}
+      {% endfor %}
+    </div>
+    <h4>Product</h4>
+    {% if product_auction_set|length != 1 %}
+    <!--Toggle between alliance and horde products. Change prices to match.-->
+
+    <input type="checkbox" id="faction_toggle_button" onclick="handleFactionToggle()">
+    <label for="faction" id="faction_toggle_label">Alliance</label>
+    {% endif %}
+
+    {% if product_auction_set.0.1.0.buyout != None %}
+    <input type="number" id="product" onchange="calculatePL()" value="{{ product_auction_set.0.1.0.buyout }}"/>
+    {% elif product_auction_set.0.1.0.unit_price != None %}
+    <input type="number" id="product" onchange="calculatePL()" value="{{ product_auction_set.0.1.0.unit_price }}"/>
+    {% else %}
+    <input type="number" id="product" onchange="calculatePL()" value="{{ product_auction_set.0.1.0.bid }}"/>
+    {% endif %}
+    <input type="number" id="profit" value="0"/>
+{% if product_auction_set|length != 1 %}
+<!--Script for alliance/horde toggle-->
+<script>
+  var alliance_product_buyout = {{ product_auction_set.0.1.0.buyout|escapejs }}
+  var horde_product_buyout = {{ product_auction_set.1.1.0.buyout|escapejs }}
+  var alliance_product_bid = {{ product_auction_set.0.1.0.bid|escapejs }}
+  var horde_product_bid = {{ product_auction_set.1.1.0.bid|escapejs }}
+  var alliance_product_unit_price = {{ product_auction_set.0.1.0.unit_price|escapejs }}
+  var horde_product_unit_price = {{ product_auction_set.1.1.0.unit_price|escapejs }}
+
+  function handleFactionToggle() {
+    var toggle_label = document.getElementById("faction_toggle_label");
+    var product_input = document.getElementById("product");
+    if (toggle_label.innerHTML === "Horde") {
+      toggle_label.innerHTML = "Alliance";
+      if (alliance_product_buyout != "None") {
+        product_input.value = alliance_product_buyout;
+      } else if (alliance_product_unit_price != "None") {
+        product_input.value = alliance_product_unit_price;
+      } else {
+        product_input.value = alliance_product_bid;
+      }
+    } else if (toggle_label.innerHTML === "Alliance") {
+      toggle_label.innerHTML = "Horde";
+      if (horde_product_buyout != "None") {
+        product_input.value = horde_product_buyout;
+      } else if (horde_product_unit_price != "None") {
+        product_input.value = horde_product_unit_price;
+      } else {
+        product_input.value = horde_product_bid;
+      }
+    }
+    calculatePL()
+  }
+</script>
+{% endif %}
+<!--Script for calculator-->
+<script>
+  function calculatePL() {
+    let mats = document.querySelectorAll("input.mat");
+    let mats_quantity = document.querySelectorAll("h5 span")
+    let product = document.getElementById("product");
+    let profit = document.getElementById("profit");
+
+    let total = 0;
+    for (let i = 0; i < mats.length; i++) {
+      total += Number(mats[i].value) * Number(mats_quantity[i].innerHTML);
+    }
+    total = product.value - total;
+    profit.value = total;
+  }
+  calculatePL()
+</script>
+{% endblock %}

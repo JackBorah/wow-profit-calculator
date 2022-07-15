@@ -1,0 +1,10 @@
+{% extends "base_template.html" %}
+
+{% block body %}
+    <h1>Professions</h1>
+    {% for profession in professionindex_list %}
+        <a href="{% url 'profession-tiers' request.session.region request.session.realm profession.name %}"><h3>{{ profession.name }}</h3></a>
+    {% empty %}
+        <h3>Error loading professions.</h3>
+    {% endfor %}
+{% endblock %}

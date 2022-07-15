@@ -53,6 +53,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'region_and_realm_select.middleware.set_region_and_realm.SetRegionAndRealmMiddleware',
 ]
 
 ROOT_URLCONF = 'wowprofitcalculator.urls'

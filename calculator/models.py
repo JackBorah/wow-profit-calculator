@@ -201,6 +201,7 @@ class Product(models.Model):
     """
     item = models.ForeignKey('Item', on_delete=models.CASCADE)
     #A single recipe can have many products. Such as an alliance and horde version.
+    #A recipe's product_set has the alliance version first like, queryset[alliance, horde]
     recipe = models.ForeignKey('Recipe', on_delete=models.CASCADE)
     min_quantity = models.IntegerField()
     max_quantity = models.IntegerField()

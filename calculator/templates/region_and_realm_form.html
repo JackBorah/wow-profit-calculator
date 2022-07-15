@@ -1,0 +1,11 @@
+{% extends "base_template.html" %}
+
+{% block body %}
+    <h1>Choose your region.</h1>
+
+    <form method="post">
+    {% csrf_token %}
+    {{ form }}
+    <input type="submit" value="Apply choices"/>
+    </form>
+{% endblock %}
