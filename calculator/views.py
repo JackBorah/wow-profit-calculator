@@ -73,3 +73,16 @@ class RecipeCalculatorView(DetailView):
         context['mats_auction_set'] = mat_auction_list #[[mat, mat_auctions], ...]
 
         return context
+
+#getting the profit/loss from milling/prospecting is easy. 
+#price*rate + ... for each pigment/gem from an herb/ore
+#Now how would the cost of herbs be found for a recipe?
+#I'm making a cost model. I can assume that the unused pigment is sold or unused.
+#So calculate the amount of herbs needed to make the recipe 
+#then decide to count unused as sold or not.
+#A problem is that pigments/inks may be sold very slowly so extras would be much lower than normal sale price to account for the high volume
+#A better solution (price wise) could be to make something else like tomes with extra inks. 
+#But i'm seeing that this is all modeling. The most useful system would say how to use leftovers
+#acutally links to recipes that use the leftovers would be best. 
+
+#TODO Needs milling and prospecting, prices of legos, prices for untradable mats, intermediate prices like showing milling, ink, pigment, profits for making decks so you can choose the best, better prices like average minbuyout or 1st quartile of all servers in the region, showing all available auctions somewhere, a link to the change realm and server page, a searchbar, home button, nice looking header and footer, prettier design, displaying information on index pages like what the profit is on the recipes index page next to the detail recipe link, reorder profession tiers so latest expansion is at the top, add wow tooltips from wowhead, add ilvl and faction (if applicaple) to the recipe index view, link to undermine journal page for historical data, link to wowhead for the items (through the tooltip), add support for recieps with multiple products, add support for procs, add vendor purchase and sell prices to items, make calculator use min of vendor buy and auction prices,
