@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
+import dj_database_url
 from dotenv import load_dotenv
 
 from pathlib import Path
@@ -97,10 +98,12 @@ DATABASES = {
 
         'PORT': '5432',
 
+        'CONN_MAX_AGE': 600,
+
     }
 }
 
-CONN_MAX_AGE = None
+DATABASES['default'] = dj_database_url.config(ssl_require=True)
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -147,6 +150,8 @@ STATICFILES_DIRS = (
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Comment out the secure settings below for localhost to work
 
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
