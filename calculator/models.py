@@ -95,8 +95,6 @@ class Auction(models.Model):
     class Meta:
         models.UniqueConstraint(fields = ['auction_id', 'timestamp'], name = 'unique_auction_id_and_time')
 
-
-
 class ItemBonus(models.Model):
     """The model of all item bonuses.
 
@@ -105,21 +103,6 @@ class ItemBonus(models.Model):
         effect (CharField): The effect of the item bonus. Max length = 50.
     """
     id = models.IntegerField(primary_key=True, db_index=True)
-
-class ItemModifier(models.Model):
-    """The model of all item modifiers.
-
-        An item can have multiple modifiers with different types and values.
-
-    Attributes:
-        id (AutoField): An incrementing number. Primary key.
-        type (IntegerField): Found in "type": int inside of auctions modifiers list.
-        value (IntegerField): Found in "value": int inside of auctions modifiers list.
-    """
-    id = models.AutoField(primary_key=True)
-    modifier_type = models.IntegerField(blank=True, null=True)
-    value = models.IntegerField(blank=True, null=True)
-    auctions = models.ManyToManyField("Auction", blank=True)
 
 class ProfessionIndex(models.Model):
     """The model for all professions.
