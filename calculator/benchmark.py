@@ -1,7 +1,6 @@
 import os
 import sys
 import timeit
-import multiprocessing as mp
 from dotenv import load_dotenv
 import django
 from pprint import pprint

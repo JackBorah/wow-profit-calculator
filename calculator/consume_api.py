@@ -409,8 +409,7 @@ def insert_all_item(region_api: WowApi) -> None:
         count += 1
     print("All items inserted")
 
-
-if __name__ == "__main__":
+def insert_all_data():
     us_region_api = WowApi("us", "en_US")
     eu_region_api = WowApi("eu", "en_US")
     kr_region_api = WowApi("kr", "en_US")
@@ -421,17 +420,17 @@ if __name__ == "__main__":
         insert_realm(region_api)
 
     # I assume the data below is the same in all regions?
-    # insert_all_item(us_region_api)
-    # insert_profession_index(us_region_api)
-    # profession_index_query = models.ProfessionIndex.objects.all()
-    # for profession_model in profession_index_query:
-    #    insert_profession_tier(us_region_api, profession_model.id)
-    #    profession_tier_query = models.ProfessionTier.objects.filter(profession = profession_model)
-    #    for profession_tier_model in profession_tier_query:
-    #        insert_recipe_category(us_region_api, profession_model.id, profession_tier_model.id)
-    # recipe_query = models.Recipe.objects.all()
-    # for recipe_model in recipe_query:
-    #    insert_recipe(us_region_api, recipe_model.id)
+    insert_all_item(us_region_api)
+    insert_profession_index(us_region_api)
+    profession_index_query = models.ProfessionIndex.objects.all()
+    for profession_model in profession_index_query:
+       insert_profession_tier(us_region_api, profession_model.id)
+       profession_tier_query = models.ProfessionTier.objects.filter(profession = profession_model)
+       for profession_tier_model in profession_tier_query:
+           insert_recipe_category(us_region_api, profession_model.id, profession_tier_model.id)
+    recipe_query = models.Recipe.objects.all()
+    for recipe_model in recipe_query:
+       insert_recipe(us_region_api, recipe_model.id)
 
     for region_api in region_api_list:
         # ConnectedRealmIndex before Realm insert
@@ -439,3 +438,7 @@ if __name__ == "__main__":
         for realm in connected_realms_query:
             # auction requires: connectedRealmIndex and Items
             insert_auctions(region_api, realm.connected_realm_id)
+
+
+if __name__ == "__main__":
+    insert_all_data()
