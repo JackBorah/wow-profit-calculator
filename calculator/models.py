@@ -1,4 +1,5 @@
 """All models used in the crafting calculator."""
+from tkinter import CASCADE
 from django.db import models
 
 
@@ -17,32 +18,20 @@ class Realm(models.Model):
         realm_id (DecimalField): The specific id for that realm. Not connected id.
             Max digits = 4. Primary Key.
         name (CharField): Realm's name. Max length = 30.
-        region (CharField): The region the realm is in. Ex: North America.
-            Max length = 30.
         timezone (CharField): Realms timezone. Ex: America/New_York Max length = 40.
         play_style (CharField): Is the realm NORMAL, RP. Max length = 20.
     """
-
-    population_choices = [
-        ("Low", "Low"),
-        ("Med", "Medium"),
-        ("High", "High"),
-        ("Full", "Full"),
-    ]
-
     connected_realm = models.ForeignKey(
-        "connectedRealmsIndex", on_delete=models.CASCADE
+        "ConnectedRealmsIndex", on_delete=models.CASCADE
     )
     population = models.CharField(
-        max_length=20, help_text="Low, Medium, High, Full", choices=population_choices
+        max_length=20, help_text="Low, Medium, High, Full"
     )
     realm_id = models.DecimalField(
         max_digits=4, decimal_places=0, help_text="Realm specific id", primary_key=True
     )
     name = models.CharField(max_length=30, help_text="Ex: Illidan, Stormrage, ...")
-    region = models.CharField(
-        max_length=30, help_text="North America, Europe, ..."
-    )
+    region = models.ForeignKey("Region", on_delete=models.CASCADE)
     timezone = models.CharField(max_length=40)
     play_style = models.CharField(max_length=7, help_text="Normal, RP")
 
@@ -153,7 +142,7 @@ class Recipe(models.Model):
     Attributes:
         id (IntegerField): The id for a recipe. Primary Key.
         name (CharField): The name for a recipe. Max length = 100.
-        product (ForeignKey): The item produced by a recipe.
+        product_set (ForeignKey): The item produced by a recipe.
         recipeCategory (ForeginKey): The category the recipe belongs to.
         mats (ManyToManyField): The materials required by the recipe.
     """
@@ -194,7 +183,75 @@ class Item(models.Model):
 
     Attributes:
         id (IntegerField): The unique id for a item. Primary Key.
+        vendor_buy_price (IntegerField): Price a vendor will buy it for.
+        vendor_sell_price (IntegerField): Price a vendor will sell it for.
+        vendor_buy_quantity (IntegerField): Amount a vendor sells in a single stack. 
+        quality (CharField): Is it junk, common, uncommon, rare, epic, legendary, heirloom
         name (CharField): The name of an item. Max length = 100.
+        binding (CharField): Is it bop, boe, boa, null. 
     """
     id = models.IntegerField(primary_key=True, db_index=True)
+    vendor_buy_price = models.IntegerField(blank=True, null=True)
+    vendor_sell_price = models.IntegerField(blank=True, null=True)
+    vendor_buy_quantity = models.IntegerField(blank=True, null=True)
+    quality = models.CharField(max_length=50, blank=True, null=True)
     name = models.CharField(max_length=100, blank=True, null=True)
+    binding = models.CharField(max_length=50, blank=True, null=True)
+
+class RealmPriceData(models.Model):
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    connected_realm = models.ForeignKey('ConnectedRealmsIndex', on_delete=models.CASCADE)
+    median_mp = models.IntegerField()
+    avg_mp = models.IntegerField()
+    quantity = models.IntegerField()
+    timestamp = models.DateTimeField()
+
+class RegionPriceData(models.Model):
+    """Model of an items price data. Such as region_median_buyout.
+
+    This table contains region wide price data like median, avg, ...
+    All prices are based on the market price. Market price is the 
+    avg of the bottom 10% of auctions for an item.
+
+    Attributes:
+        item (ForeignKey): A WoW item.
+        region (ForeignKey): The region the price data belongs to.
+        region_median_mp (IntegerField): An items median market price for all servers in a region.
+        region_avg_mp (IntegerField): An items average market price for all servers in a region. 
+        region_quantity (IntegerField): The total amount of an item available in a region. 
+        timestamp (DateField): The timestamp of when the price data was added to the db.
+
+    """
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    region = models.ForeignKey('Region', on_delete=models.CASCADE)
+    region_median_mp = models.IntegerField()
+    region_avg_mp = models.IntegerField()
+    region_quantity = models.IntegerField()
+    timestamp = models.DateTimeField()
+
+class RecipeProfit(models.Model):
+    """Model of a recipe's profit/loss at specific time and realm. 
+    
+    Attributes:
+        recipe (ForeignKey): The recipe this profit data belongs to.
+        connected_realm (ForeignKey): The realm this data belongs to. 
+        timestamp (DateField): The timestamp of when the profitability data was added to the db.
+        profit (IntegerField): The profit/loss of a recipe. Prices are from price data.
+
+    """
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    connected_realm = models.ForeignKey('connectedRealmsIndex', on_delete=models.CASCADE)
+    timestamp = models.DateTimeField()
+    profit = models.IntegerField()
+    
+
+class Region(models.Model):
+    """Server regions such as North America, Europe, Korea.
+    
+    Attributes:
+        region (CharField): The region. Ex: North America.
+            Max length = 30.
+    """
+    region = models.CharField(
+        max_length=30, help_text="North America, Europe, ...", primary_key=True
+    )
