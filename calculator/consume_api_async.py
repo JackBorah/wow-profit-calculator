@@ -186,9 +186,9 @@ class Insert(WowApi):
         models.Recipe.objects.bulk_create(recipes)
 
 
-    async def insert_recipe(self, recipe_id: int):
+    def insert_recipe(self, recipe_id: int):
         """Inserts a recipe along with its items, products, and materials into the db."""
-        json = await self.get_recipe(recipe_id)
+        json = async_to_sync(self.get_recipe)(recipe_id)
         # recipe id, recipe name, product foreignKey, material(s), material quantity
         recipe_id = json["id"]
         recipe_name = json["name"]
@@ -257,15 +257,14 @@ class Insert(WowApi):
             recipe.mats.add(material)
             recipe.save()
 
-
-    async def insert_item(self):
+    #TODO
+    def insert_item(self):
         """Inserts an item into the db."""
         pass
 
-
-    async def insert_all_item(self):
+    def insert_all_item(self):
         """Inserts all items into the db."""
-        json = self.item_search(
+        json = async_to_sync(self.item_search)(
             **{"id": f"({0},)", "orderby": "id", "_pageSize": 1000}
         )
         items = []
@@ -274,13 +273,13 @@ class Insert(WowApi):
             vendor_buy_price = item['purchase_price']
             vendor_sell_price = item['sell_price']
             vendor_buy_quantity = item['purchase_quantity']
-            quality = item['quality']['name']
+            quality = item['quality']['type']
             name = item['name']
             if item.get('binding'):
-                binding = item['binding']['name']
+                binding = item['binding']['type']
             else:
                 binding = None
-            item_record = models.Item.objects.create(
+            item_record = models.Item(
                 id=id, vendor_buy_price=vendor_buy_price, 
                 vendor_sell_price=vendor_sell_price, 
                 vendor_buy_quantity=vendor_buy_quantity, 
@@ -288,8 +287,8 @@ class Insert(WowApi):
             )
             items.append(item_record)
 
-            last_id = json["results"][-1]["data"]["id"]
-            json = self.item_search(
+            last_id = json["items"][-1]["id"]
+            json = async_to_sync(self.item_search)(
                 **{"id": f"({last_id},)", "orderby": "id", "_pageSize": 1000},
             )
         models.Item.objects.bulk_create(items)

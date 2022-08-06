@@ -191,13 +191,74 @@ class Test(TestCase):
 
 
     def test_insert_recipe(self):
-        pass
+        self.test_api.get_recipe = AsyncMock(return_value = {
+            'id':1,
+            'name':'Test recipe',
+            'crafted_item': {'id':2, 'name':'item_test'},
+            'crafted_quantity': {'value':2},
+            'reagents': [{'reagent': {'id':2, 'name':'item_test'}, 'quantity':2}]
+        })
+        #TODO test that this inserts into the mats, product, and recipe models correctly
+        self.test_api.insert_recipe(self.mock_recipe_id)
+        actual_record = Recipe.objects.filter(id=1).values()
+        mats = Recipe.objects.filter(id=1)[0].mats.all().values()
 
+        expected_record = {
+            'id':1,
+            'name':'Test recipe',
+            'recipe_category_id':1,
+        }
+        expected_record_mats0 = {
+            'id':1,
+            'item_id':1,
+            'quantity':1
+        }
+        expected_record_mats1 = {
+            'id':2,
+            'item_id':2,
+            'quantity':2
+        }
+
+        self.assertDictEqual(expected_record, actual_record[0])
+        self.assertDictEqual(expected_record_mats0, mats[0])
+        self.assertDictEqual(expected_record_mats1, mats[1])
+
+    #TODO
     def test_insert_item(self):
         pass
 
     def test_insert_all_item(self):
-        pass
+        mock_items_json = {
+            'items':[
+                {
+                    'id':3,
+                    'purchase_price':2,
+                    'sell_price':2,
+                    'purchase_quantity':2,
+                    'quality': {'type':'EPIC'},
+                    'name': 'Test Epic item',
+                    'binding': {'type':'ON_ACQUIRE'}
+                },
+                {
+                    'id':4,
+                    'purchase_price':2,
+                    'sell_price':3,
+                    'purchase_quantity':3,
+                    'quality': {'type':'LEGENDARY'},
+                    'name': 'Test lego item',
+                },
+            ]
+        }
+        self.test_api.item_search = AsyncMock(return_value = mock_items_json)
+        self.test_api.insert_all_item()
+        actual_record = Item.objects.filter(vendor_buy_price=2).values()
+        expected_record = [
+            {'id': 3, 'vendor_buy_price': 2, 'vendor_sell_price': 2, 'vendor_buy_quantity': 2, 'quality': 'EPIC', 'name': 'Test Epic item', 'binding': 'ON_ACQUIRE'},
+            {'id': 4, 'vendor_buy_price': 2, 'vendor_sell_price': 3, 'vendor_buy_quantity': 3, 'quality': 'LEGENDARY', 'name': 'Test lego item', 'binding': None}
+        ]
+        self.assertEqual(expected_record[0], actual_record[0])
+        self.assertEqual(expected_record[1], actual_record[1])
+
 
     def test_insert_regions(self):
         pass
