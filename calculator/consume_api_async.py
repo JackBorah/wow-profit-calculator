@@ -120,9 +120,9 @@ class Insert(WowApi):
             auction.bonuses.add(*bonuses)
 
 
-    async def insert_profession_index(self):
+    def insert_profession_index(self):
         """Inserts all professions into the db."""
-        json = await self.get_profession_index()
+        json = async_to_sync(self.get_profession_index)()
         for profession in json["professions"]:
             id = profession["id"]
             name = profession["name"]
@@ -130,9 +130,9 @@ class Insert(WowApi):
             record.save()
 
 
-    async def insert_profession_tier(self, profession_id: int):
+    def insert_profession_tier(self, profession_id: int):
         """Inserts all profession tiers for a profession into the db."""
-        json = await self.get_profession_tiers(profession_id)
+        json = async_to_sync(self.get_profession_tiers)(profession_id)
         profession_obj = models.ProfessionIndex.objects.get(id=profession_id)
         if json.get("skill_tiers"):
             for tier in json["skill_tiers"]:
@@ -141,8 +141,8 @@ class Insert(WowApi):
                 record = models.ProfessionTier(id=id, name=name, profession=profession_obj)
                 record.save()
 
-    async def insert_recipe_category(
-        region_api: WowApi, profession_id: int, profession_tier_id: int
+    def insert_recipe_category(self, 
+        profession_id: int, profession_tier_id: int
     ) -> None:
         """Inserts data from recipe category into that model and the name and id into the recipe model.
 
@@ -151,12 +151,11 @@ class Insert(WowApi):
             profession_id (int): A professions id. Get from profession index.
             profession_tier_id (int): A profession tier's id. Get from profession tiers.
         """
-        json = region_api.get_profession_tier_categories(profession_id, profession_tier_id)
+        json = async_to_sync(self.get_profession_tier_categories)(profession_id, profession_tier_id)
         profession_tier_obj = models.ProfessionTier.objects.get(id=profession_tier_id)
 
         recipes = []
 
-        print(f"Inserting profession: {profession_id}, and skill tier: {profession_tier_id}...")
         if json.get("categories"):
             for category in json["categories"]:
                 category_name = category.get("name")
@@ -185,7 +184,6 @@ class Insert(WowApi):
                 category_record.save()
 
         models.Recipe.objects.bulk_create(recipes)
-        print(f"Profession: {profession_id}, category: {profession_tier_id} inserted")
 
 
     async def insert_recipe(self, recipe_id: int):

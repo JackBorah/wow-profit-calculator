@@ -13,7 +13,7 @@ class Test(TestCase):
     mock_recipe_id = 1
     mock_connected_realm_id = 1
     mock_profession_id = 1
-    mock_skill_tier_id = 1
+    mock_profession_tier_id = 1
     mock_item_id = 1
     current_date = datetime.datetime.now()
     with aioresponses() as mocked:
@@ -141,4 +141,75 @@ class Test(TestCase):
             expected_record, actual_record[0]
         )
 
+    def test_insert_profession_index(self):
+        self.test_api.get_profession_index = AsyncMock(
+            return_value={"professions": [{"id": 2, "name": "test"}]}
+        )
 
+        self.test_api.insert_profession_index()
+        actual_record = ProfessionIndex.objects.filter(id=2).values()
+        expected_record = {'name':"test", 'id':2}
+        self.assertDictEqual(expected_record, actual_record[0])
+
+
+    def test_insert_profession_tier(self):
+        self.test_api.get_profession_tiers = AsyncMock(
+            return_value={"id": 1, "skill_tiers": [{"name": "Test", "id": 2}]}
+        )
+        self.test_api.insert_profession_tier(self.mock_profession_id)
+        actual_record = ProfessionTier.objects.filter(id=2).values()
+        expected_record = {'id':2, 'name':"Test", 'profession_id':1}
+        self.assertEqual(expected_record, actual_record[0])
+
+    def test_insert_recipe_category(self):
+        self.test_api.get_profession_tier_categories = AsyncMock(
+            return_value={
+                "categories": [
+                    {
+                        "name": "Test Category 2",
+                        "recipes": [{"name": "Test Recipe", "id": 2}],
+                    }
+                ]
+            }
+        )
+        self.test_api.insert_recipe_category(self.mock_profession_id, self.mock_profession_tier_id)
+        actual_record_category = RecipeCategory.objects.filter(name="Test Category 2").values()
+        actual_record_recipe = Recipe.objects.filter(id=2).values()
+        expected_record_category = {
+            'id':2,
+            'name':'Test Category 2',
+            'profession_tier_id': 1,
+        }
+        expected_record_recipe = {
+            'id':2,
+            'name':'Test Recipe',
+            'recipe_category_id': 2,
+        }
+
+        self.assertEqual(expected_record_category, actual_record_category[0])
+        self.assertEqual(expected_record_recipe, actual_record_recipe[0])
+
+
+    def test_insert_recipe(self):
+        pass
+
+    def test_insert_item(self):
+        pass
+
+    def test_insert_all_item(self):
+        pass
+
+    def test_insert_regions(self):
+        pass
+
+    def test_insert_all_data(self):
+        pass
+
+    def test_insert_realm_price_data(self):
+        pass
+
+    def test_insert_region_price_data(self):
+        pass
+
+    def test_insert_recipe_profit(self):
+        pass
