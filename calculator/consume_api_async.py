@@ -1,11 +1,14 @@
 import os
 import sys
 import time
+import asyncio
 from dotenv import load_dotenv
 from getwowdataasync import WowApi
 from getwowdataasync import convert_to_datetime
 import django
 from pprint import pprint
+from asgiref.sync import async_to_sync, sync_to_async
+
 
 load_dotenv()
 
@@ -20,17 +23,23 @@ from calculator import models
 
 ### improvements from sync version
 # combining consume & insert into a single function. Its simpiler, easier to read, and testing consume should be handled by the library not the user
-# instead of functions extend WowApi and make insert methods. I had to pass the API to every single funcion last time. It seems unessicary if all functions need the same data make it a class.
+# instead of independent functions extend WowApi and make insert methods. I had to pass the API to every single funcion last time. It seems unessicary if all functions need the same data make it a class.
 
 
-class insert(WowApi):    
-    async def insert_all_realms(self):
+class Insert(WowApi):
+    @classmethod
+    async def create(cls, region: str):
+        wowapi = await super().create(region)
+        self = Insert()
+        self.__dict__ = wowapi.__dict__.copy()
+        return self
+
+    def insert_all_realms(self):
         """Inserts all realms into the db from the set region."""
-        json = await self.connected_realm_search()
+        json = async_to_sync(self.connected_realm_search)()
         regions = models.Region.objects.all()
         connected_realms = models.ConnectedRealmsIndex.objects.all()
 
-        print("Inserting realms...")
         for connected_realm in json[
             "results"
         ]:  # each entry in results is a connected realm cluster
@@ -54,24 +63,23 @@ class insert(WowApi):
                     play_style=play_style,
                 )
                 record.save()
-            print("Realms inserted")
 
 
-    async def insert_connected_realms_index(self):
+    def insert_connected_realms_index(self):
         """Inserts connected realm ids into the db."""
-        json = await self.connected_realm_search()
+        json = async_to_sync(self.connected_realm_search)()
 
         for connected_realm in json["results"]:
             record = models.ConnectedRealmsIndex(connected_realm_id=connected_realm["data"]["id"])
             record.save()
 
 
-    async def insert_auctions(self, connected_realm_id: int):
+    def insert_auctions(self, connected_realm_id: int):
         """Inserts all auctions from a connected realm into the db."""
         connected_realm_obj = models.ConnectedRealmsIndex.objects.get(
             connected_realm_id=connected_realm_id
         )
-        json = await self.get_auctions(connected_realm_id)
+        json = async_to_sync(self.get_auctions)(connected_realm_id)
         all_items = models.Item.objects.all()
         all_bonuses = models.ItemBonus.objects.all()
         auction_objects = []  # contains auctions for bulk create
@@ -314,4 +322,11 @@ class insert(WowApi):
 # How will RecipeProfit, PriceData, and the new item fields be inserted?
 # Profits will have to be calculated each hour too.
 # There are a couple thousand recipes per server and dozens of connected realms to calculate for.
+# Thats a lot of dynos calculating and inserting auctions each hour.
 
+async def main():
+    api = await Insert.create('us')
+    await api.insert_all_realms()
+
+if __name__ == "__main__":
+    asyncio.run(main())
