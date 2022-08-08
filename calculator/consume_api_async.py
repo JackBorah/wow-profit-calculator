@@ -1,11 +1,10 @@
 import os
 import sys
-import time
 import asyncio
 from dotenv import load_dotenv
-from getwowdataasync import WowApi
-from getwowdataasync import convert_to_datetime
+from getwowdataasync import *
 import django
+from django.db.models import Avg, Sum
 from pprint import pprint
 from asgiref.sync import async_to_sync, sync_to_async
 
@@ -67,10 +66,11 @@ class Insert(WowApi):
 
     def insert_connected_realms_index(self):
         """Inserts connected realm ids into the db."""
-        json = async_to_sync(self.connected_realm_search)()
+        json = async_to_sync(self.get_connected_realm_index)()
 
-        for connected_realm in json["results"]:
-            record = models.ConnectedRealmsIndex(connected_realm_id=connected_realm["data"]["id"])
+        for connected_realm in json["connected_realms"]:
+            connected_realm_id = get_id_from_url(connected_realm['href'])
+            record = models.ConnectedRealmsIndex(connected_realm_id=connected_realm_id)
             record.save()
 
 
@@ -294,7 +294,7 @@ class Insert(WowApi):
         models.Item.objects.bulk_create(items)
 
 
-    async def insert_regions(self):
+    def insert_regions(self):
         """Inserts all regions into the db."""
         na = 'North America'
         eu = 'Europe'
@@ -305,14 +305,93 @@ class Insert(WowApi):
             record.save()
 
 
-    async def insert_all_data(self):
+    def insert_all_data(self):
         """Inserts all revelant wow data into the db."""
-        pass
+        self.insert_regions()
+        self.insert_connected_realms_index()
+        self.insert_all_realms()
+
+        # I assume the data below is the same in all regions?
+        self.insert_all_item()
+        self.insert_profession_index()
+        profession_index_query = models.ProfessionIndex.objects.all()
+        for profession_model in profession_index_query:
+            self.insert_profession_tier(profession_model.id)
+        profession_tier_query = models.ProfessionTier.objects.filter(profession = profession_model)
+        for profession_tier_model in profession_tier_query:
+            self.insert_recipe_category(profession_model.id, profession_tier_model.id)
+        recipe_query = models.Recipe.objects.all()
+        for recipe_model in recipe_query:
+            self.insert_recipe(recipe_model.id)
+
+        # ConnectedRealmIndex before Realm insert
+        connected_realms_query = models.ConnectedRealmsIndex.objects.all()
+        for realm in connected_realms_query:
+            # auction requires: connectedRealmIndex and Items
+            self.insert_auctions(realm.connected_realm_id)
 
 
-    async def insert_recipe_profit(self):
-        """Inserts all revelant wow data into the db."""
-        pass
+def calculate_market_price(item_id: int):
+    """Calculates the market price of an item.
+    
+    Args:
+        item_id (int): The id of an item.
+    """
+    #excludes records with no buyout
+    auctions_with_buyout = models.Auction.objects.filter(item_id=item_id).exclude(buyout=None)
+    #excludes records with no unit_price
+    auctions_with_unit_price = models.Auction.objects.filter(item_id=item_id).exclude(unit_price=None)
+
+    if auctions_with_buyout.count() != 0:
+        quantity_sum = auctions_with_buyout.aggregate(Sum('quantity'))['quantity__sum']
+        ordered_buyouts = auctions_with_buyout.values_list('buyout', flat=True).order_by('buyout')
+        bottom_10percent = round(quantity_sum * .1)
+        market_price = ordered_buyouts.filter(buyout__lt=ordered_buyouts[bottom_10percent]).aggregate(Avg('buyout'))
+        return market_price
+    elif auctions_with_unit_price.count() != 0:
+        quantity_sum = auctions_with_unit_price.aggregate(Sum('quantity'))['quantity__sum']
+        ordered_buyouts = auctions_with_unit_price.values_list('unit_price', flat=True).order_by('unit_price')
+        bottom_10percent = round(quantity_sum * .1)
+        market_price = ordered_buyouts.filter(unit_price__lt=ordered_buyouts[bottom_10percent]).aggregate(Avg('unit_price'))
+        return market_price
+
+def calculate_avg_region_market_price(item_id: int, connected_realm_id: int):
+    """Calcluate the avg of an items market price in a region.
+    
+    Args:
+        item_id (int): The id of an item.
+        connected_realm_id (int): The id of a connected realm.
+    """
+    pass
+
+
+def calculate_median_region_market_price(item_id: int, connected_realm_id: int):
+    """Calcluate the median of an items market price in a region.
+    
+    Args:
+        item_id (int): The id of an item.
+        connected_realm_id (int): The id of a connected realm.
+    """
+    pass
+
+
+def calculate_recipe_profit(recipe_id: int, connected_realm_id: int):
+    """Calcluate the profit from a recipe.
+    
+    Args:
+        item_id (int): The id of an item.
+        connected_realm_id (int): The id of a connected realm.
+    """
+    pass
+
+def calculate_region_recipe_profit(recipe_id: int):
+    """Calcluate the profit from a recipe.
+    
+    Args:
+        item_id (int): The id of an item.
+    """
+    pass
+
 
 #TODO
 # New models have to be inserted
@@ -321,9 +400,8 @@ class Insert(WowApi):
 # There are a couple thousand recipes per server and dozens of connected realms to calculate for.
 # Thats a lot of dynos calculating and inserting auctions each hour.
 
-async def main():
-    api = await Insert.create('us')
-    await api.insert_all_realms()
+#async def main():
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    pass
