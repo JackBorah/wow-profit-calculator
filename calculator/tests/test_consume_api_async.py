@@ -259,8 +259,9 @@ class Test(TestCase):
         self.assertEqual(expected_record[0], actual_record[0])
         self.assertEqual(expected_record[1], actual_record[1])
 
-    """
-    def test_insert_all_data(self):
+
+    def test_insert_regional_data(self):
+
         self.test_api.connected_realm_search = AsyncMock(return_value={
                 "results": [
                     {
@@ -281,15 +282,139 @@ class Test(TestCase):
                 ]
             }
         )
-        self.test_api.insert_all_data()
-        actual_record = Item.objects.filter(vendor_buy_price=2).values()
-        expected_record = [
+        self.test_api.get_connected_realm_index = AsyncMock(
+            return_value={
+                "connected_realms": [
+                    {
+                        "href": "https://us.api.blizzard.com/data/wow/connected-realm/121?namespace=dynamic-us"
+                    }
+                ]
+            }
+        )
+      
+        self.test_api.insert_regional_data()
+
+        expected_connected_realm_record = {'connected_realm_id':121}
+        actual_connected_realm_record = ConnectedRealmsIndex.objects.filter(connected_realm_id=121).values()
+        self.assertDictEqual(expected_connected_realm_record, actual_connected_realm_record[0])
+
+        actual_realm_record = Realm.objects.filter(realm_id=2).values()
+        expected_realm_record = {
+            'connected_realm_id': 1,
+            'population': "FULL",
+            'realm_id': 2,
+            'name': "TestServer",
+            'region_id': "testregion",
+            'timezone': "America/New_York",
+            'play_style': "NORMAL",
+        }
+        self.assertDictEqual(expected_realm_record, actual_realm_record[0])
+
+
+    def test_insert_static_data(self):
+        self.test_api.get_profession_index = AsyncMock(
+            return_value={"professions": [{"id": 2, "name": "test"}]}
+        )
+        self.test_api.get_profession_tiers = AsyncMock(
+            return_value={"id": 1, "skill_tiers": [{"name": "Test", "id": 2}]}
+        )
+        self.test_api.get_profession_tier_categories = AsyncMock(
+            return_value={
+                "categories": [
+                    {
+                        "name": "Test Category 2",
+                        "recipes": [{"name": "Test Recipe", "id": 2}],
+                    }
+                ]
+            }
+        )
+        self.test_api.get_recipe = AsyncMock(return_value = {
+            'id':1,
+            'name':'Test recipe',
+            'crafted_item': {'id':2, 'name':'item_test'},
+            'crafted_quantity': {'value':2},
+            'reagents': [{'reagent': {'id':2, 'name':'item_test'}, 'quantity':2}]
+        })
+        mock_items_json = {
+                    'items':[
+                        {
+                            'id':3,
+                            'purchase_price':2,
+                            'sell_price':2,
+                            'purchase_quantity':2,
+                            'quality': {'type':'EPIC'},
+                            'name': 'Test Epic item',
+                            'binding': {'type':'ON_ACQUIRE'}
+                        },
+                        {
+                            'id':4,
+                            'purchase_price':2,
+                            'sell_price':3,
+                            'purchase_quantity':3,
+                            'quality': {'type':'LEGENDARY'},
+                            'name': 'Test lego item',
+                        },
+                    ]
+                }
+        self.test_api.item_search = AsyncMock(return_value = mock_items_json)
+    
+        self.test_api.insert_static_data()
+
+        actual_profession_index_record = ProfessionIndex.objects.filter(id=2).values()
+        expected_profession_index_record = {'name':"test", 'id':2}
+        self.assertDictEqual(expected_profession_index_record, actual_profession_index_record[0])
+
+        actual_profession_tier_record = ProfessionTier.objects.filter(id=2).values()
+        expected_profession_tier_record = {'id':2, 'name':"Test", 'profession_id':2}
+        self.assertEqual(expected_profession_tier_record, actual_profession_tier_record[0])
+
+        actual_record_category = RecipeCategory.objects.filter(name="Test Category 2").values()
+        actual_record_recipe = Recipe.objects.filter(id=2).values()
+        expected_record_category = {
+            'id':3,
+            'name':'Test Category 2',
+            'profession_tier_id': 2,
+        }
+        expected_record_recipe = {
+            'id':2,
+            'name':'Test Recipe',
+            'recipe_category_id': 3,
+        }
+
+        self.assertEqual(expected_record_category, actual_record_category[0])
+        self.assertEqual(expected_record_recipe, actual_record_recipe[0])
+
+        actual_recipe_record = Recipe.objects.filter(id=1).values()
+        mats = Recipe.objects.filter(id=1)[0].mats.all().values()
+
+        expected_recipe_record = {
+            'id':1,
+            'name':'Test recipe',
+            'recipe_category_id':1,
+        }
+        expected_recipe_record_mats0 = {
+            'id':1,
+            'item_id':1,
+            'quantity':1
+        }
+        expected_recipe_record_mats1 = {
+            'id':3,
+            'item_id':2,
+            'quantity':2
+        }
+
+        self.assertDictEqual(expected_recipe_record, actual_recipe_record[0])
+        self.assertDictEqual(expected_recipe_record_mats0, mats[0])
+        self.assertDictEqual(expected_recipe_record_mats1, mats[1])
+
+        actual_items_record = Item.objects.filter(vendor_buy_price=2).values()
+        expected_items_record = [
             {'id': 3, 'vendor_buy_price': 2, 'vendor_sell_price': 2, 'vendor_buy_quantity': 2, 'quality': 'EPIC', 'name': 'Test Epic item', 'binding': 'ON_ACQUIRE'},
             {'id': 4, 'vendor_buy_price': 2, 'vendor_sell_price': 3, 'vendor_buy_quantity': 3, 'quality': 'LEGENDARY', 'name': 'Test lego item', 'binding': None}
         ]
-        self.assertEqual(expected_record[0], actual_record[0])
-        self.assertEqual(expected_record[1], actual_record[1])
-    """
+        self.assertEqual(expected_items_record[0], actual_items_record[0])
+        self.assertEqual(expected_items_record[1], actual_items_record[1])
+
 
     def test_calculate_market_price(self):
         for id in range(20):

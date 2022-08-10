@@ -27,8 +27,8 @@ class Realm(models.Model):
     population = models.CharField(
         max_length=20, help_text="Low, Medium, High, Full"
     )
-    realm_id = models.DecimalField(
-        max_digits=4, decimal_places=0, help_text="Realm specific id", primary_key=True
+    realm_id = models.IntegerField(
+        help_text="Realm specific id", primary_key=True
     )
     name = models.CharField(max_length=30, help_text="Ex: Illidan, Stormrage, ...")
     region = models.ForeignKey("Region", on_delete=models.CASCADE)
@@ -198,13 +198,14 @@ class Item(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
     binding = models.CharField(max_length=50, blank=True, null=True)
 
+
 class RealmPriceData(models.Model):
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
     connected_realm = models.ForeignKey('ConnectedRealmsIndex', on_delete=models.CASCADE)
-    median_mp = models.IntegerField()
-    avg_mp = models.IntegerField()
+    market_price = models.IntegerField()
     quantity = models.IntegerField()
     timestamp = models.DateTimeField()
+
 
 class RegionPriceData(models.Model):
     """Model of an items price data. Such as region_median_buyout.
@@ -220,7 +221,6 @@ class RegionPriceData(models.Model):
         region_avg_mp (IntegerField): An items average market price for all servers in a region. 
         region_quantity (IntegerField): The total amount of an item available in a region. 
         timestamp (DateField): The timestamp of when the price data was added to the db.
-
     """
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
     region = models.ForeignKey('Region', on_delete=models.CASCADE)

@@ -305,13 +305,14 @@ class Insert(WowApi):
             record.save()
 
 
-    def insert_all_data(self):
-        """Inserts all revelant wow data into the db."""
+    def insert_regional_data(self):
+        """Inserts data specific to a region, except for auctions, into the db."""
         self.insert_regions()
         self.insert_connected_realms_index()
         self.insert_all_realms()
 
-        # I assume the data below is the same in all regions?
+    def insert_static_data(self):
+        """Inserts data common to all regions like professions, items, ... into the db. """
         self.insert_all_item()
         self.insert_profession_index()
         profession_index_query = models.ProfessionIndex.objects.all()
@@ -323,12 +324,6 @@ class Insert(WowApi):
         recipe_query = models.Recipe.objects.all()
         for recipe_model in recipe_query:
             self.insert_recipe(recipe_model.id)
-
-        # ConnectedRealmIndex before Realm insert
-        connected_realms_query = models.ConnectedRealmsIndex.objects.all()
-        for realm in connected_realms_query:
-            # auction requires: connectedRealmIndex and Items
-            self.insert_auctions(realm.connected_realm_id)
 
 
 def calculate_market_price(item_id: int):
