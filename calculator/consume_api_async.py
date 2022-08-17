@@ -224,6 +224,7 @@ class Insert(WowApi):
                 id=horde_product_id, name=horde_product_name
             )
             product_list.append(horde_product_item_obj)
+
         materials_list = []
         if json.get("reagents"):
             for mat in json.get("reagents"):
@@ -264,8 +265,9 @@ class Insert(WowApi):
 
     def insert_all_item(self):
         """Inserts all items into the db."""
+        print('inserting items')
         json = async_to_sync(self.item_search)(
-            **{"id": f"({0},)", "orderby": "id", "_pageSize": 1000}
+            **{"id": f"({0},)", "orderby": "id", "_pageSize": 100}
         )
         items = []
         for item in json["items"]:
@@ -289,7 +291,7 @@ class Insert(WowApi):
 
             last_id = json["items"][-1]["id"]
             json = async_to_sync(self.item_search)(
-                **{"id": f"({last_id},)", "orderby": "id", "_pageSize": 1000},
+                **{"id": f"({last_id},)", "orderby": "id", "_pageSize": 100},
             )
         models.Item.objects.bulk_create(items)
 
@@ -307,23 +309,145 @@ class Insert(WowApi):
 
     def insert_regional_data(self):
         """Inserts data specific to a region, except for auctions, into the db."""
+        print('inserting regions...')
         self.insert_regions()
+        print('inserting connected realms index...')
         self.insert_connected_realms_index()
+        print('inserting all realms...')
         self.insert_all_realms()
+        print('finished inserting regional data')
+
+
+    def insert_profession_data(self):
+        """Inserts all profession data.
+        
+        Items should be inserted before calling this method.
+        """
+        prof_tree = async_to_sync(self.get_all_profession_data)()
+        inserted_professions = self._insert_profession_index(prof_tree)
+        inserted_skill_tiers = self._insert_skill_tiers(prof_tree, inserted_professions)
+        inserted_categories = self._insert_skill_tier_categories(prof_tree, inserted_skill_tiers)
+        self._insert_all_recipes(prof_tree, inserted_categories)
+
+
+    def _insert_profession_index(self, profession_tree: list) -> list:
+        profession_records = []
+        for profession in profession_tree:
+            id = profession["id"]
+            name = profession["name"]
+            record = models.ProfessionIndex(name=name, id=id)
+            profession_records.append(record)
+        inserted_professions = models.ProfessionIndex.objects.bulk_create(profession_records)
+        return inserted_professions
+
+
+    def _insert_skill_tiers(self, profession_tree: list, profession_objects: list) -> list:        
+        skill_tier_records = []
+        for index, profession in enumerate(profession_tree):
+            for skill_tier in profession['skill_tiers']:
+                name = skill_tier["name"]
+                id = skill_tier["id"]
+                record = models.ProfessionTier(id=id, name=name, profession=profession_objects[index])
+                skill_tier_records.append(record)
+        inserted_skill_tiers = models.ProfessionTier.objects.bulk_create(skill_tier_records)
+        return inserted_skill_tiers
+
+
+    def _insert_skill_tier_categories(self, profession_tree: list, skill_tier_objects: list) -> list:
+        category_records = []
+        for profession in profession_tree:
+            for tier_index, skill_tier in enumerate(profession['skill_tiers']):
+                for category in skill_tier['categories']:
+                    name = category['name']
+                    record = models.RecipeCategory(name=name, profession_tier=skill_tier_objects[tier_index])
+                    category_records.append(record)
+        inserted_categories = models.RecipeCategory.objects.bulk_create(category_records)
+        return inserted_categories
+
+
+    def _insert_all_recipes(self, profession_tree: list, category_objects: list):
+        mat_records = []
+        product_records = []
+        recipe_records = []
+        for profession in profession_tree:
+            for skill_tier in profession['skill_tiers']:
+                for category_index, category in enumerate(skill_tier['categories']):
+                    for recipe in category['recipes']:
+                        id = recipe['id']
+                        name = recipe['name']
+                        recipe_category = category_objects[category_index]
+
+                        record = models.Recipe(id=id, name=name, recipe_category=recipe_category)
+                        recipe_records.append(record)
+
+                        product = models.Product(recipe=record)
+                        if recipe.get("crafted_quantity"):
+                            if recipe.get("crafted_quantity").get("value"):
+                                min_and_max_quantity = recipe["crafted_quantity"]["value"]
+                                min_quantity = min_and_max_quantity
+                                max_quantity = min_and_max_quantity
+                            else:
+                                min_quantity = recipe["crafted_quantity"]["minimum"]
+                                max_quantity = recipe["crafted_quantity"]["maximum"]
+                        else:
+                            max_quantity = 0
+                            min_quantity = 0
+
+                        if recipe.get("crafted_item"):
+                            product_id = recipe["crafted_item"]["id"]
+                            product_name = recipe["crafted_item"]["name"]
+                            product_item_obj, _ = models.Item.objects.get_or_create(
+                                id=product_id, name=product_name
+                            )
+                            product = models.Product(recipe=record, item=product_item_obj, min_quantity=min_quantity, max_quantity=max_quantity)
+                            product_records.append(product)
+
+                        if recipe.get("alliance_crafted_item"):
+                            alliance_product_id = recipe["alliance_crafted_item"]["id"]
+                            alliance_product_name = recipe["alliance_crafted_item"]["name"]
+                            alliance_product_item_obj, _ = models.Item.objects.get_or_create(
+                                id=alliance_product_id, name=alliance_product_name
+                            )
+                            product = models.Product(recipe=record, item=alliance_product_item_obj, min_quantity=min_quantity, max_quantity=max_quantity)
+                            product_records.append(product)
+
+                        if recipe.get("horde_crafted_item"):
+                            horde_product_id = recipe["horde_crafted_item"]["id"]
+                            horde_product_name = recipe["horde_crafted_item"]["name"]
+                            horde_product_item_obj, _ = models.Item.objects.get_or_create(
+                                id=horde_product_id, name=horde_product_name
+                            )
+                            product = models.Product(recipe=record, item=horde_product_item_obj, min_quantity=min_quantity, max_quantity=max_quantity)
+                            product_records.append(product)
+
+
+                        if recipe.get("reagents"):
+                            for mat in recipe["reagents"]:
+                                mat_item_quantity = mat["quantity"]
+                                mat_id = mat["reagent"]["id"]
+                                mat_name = mat["reagent"]["name"]
+                                mat_item_obj, _ = models.Item.objects.get_or_create(
+                                    id=mat_id, name=mat_name
+                                )
+                                mat_obj = models.Material(item = mat_item_obj,recipe = record , quantity = mat_item_quantity)
+                                mat_records.append(mat_obj)            
+        
+        inserted_recipes = models.Recipe.objects.bulk_create(recipe_records)
+        inserted_products = models.Product.objects.bulk_create(product_records)
+        inserted_mats = models.Material.objects.bulk_create(mat_records)
+
 
     def insert_static_data(self):
-        """Inserts data common to all regions like professions, items, ... into the db. """
+        """Inserts data common to all regions like professions, items, ... into the db.
+        
+        Items are inserted first. Then the all profession data.
+        """
+        print("Inserting all items...")
         self.insert_all_item()
-        self.insert_profession_index()
-        profession_index_query = models.ProfessionIndex.objects.all()
-        for profession_model in profession_index_query:
-            self.insert_profession_tier(profession_model.id)
-        profession_tier_query = models.ProfessionTier.objects.filter(profession = profession_model)
-        for profession_tier_model in profession_tier_query:
-            self.insert_recipe_category(profession_model.id, profession_tier_model.id)
-        recipe_query = models.Recipe.objects.all()
-        for recipe_model in recipe_query:
-            self.insert_recipe(recipe_model.id)
+        print("Finished inserting items!")
+        print("Inserting all profession data...")
+        self.insert_profession_data()
+        print("Finished inserting profession data!")
 
 
 def calculate_market_price(item_id: int):
@@ -395,8 +519,13 @@ def calculate_region_recipe_profit(recipe_id: int):
 # There are a couple thousand recipes per server and dozens of connected realms to calculate for.
 # Thats a lot of dynos calculating and inserting auctions each hour.
 
-#async def main():
+async def main():
+    api = await Insert.create('us')
+    #await sync_to_async(api.insert_regional_data)()
+    await sync_to_async(api.insert_static_data)()
 
 
 if __name__ == "__main__":
-    pass
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+    asyncio.run(main())
