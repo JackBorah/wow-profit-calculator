@@ -1,5 +1,6 @@
 import datetime
 from unittest.mock import MagicMock, AsyncMock
+from string import ascii_uppercase
 
 from asgiref.sync import async_to_sync, sync_to_async
 from django.test import TestCase, TransactionTestCase
@@ -261,7 +262,6 @@ class Test(TestCase):
 
 
     def test_insert_regional_data(self):
-
         self.test_api.connected_realm_search = AsyncMock(return_value={
                 "results": [
                     {
@@ -309,111 +309,6 @@ class Test(TestCase):
             'play_style': "NORMAL",
         }
         self.assertDictEqual(expected_realm_record, actual_realm_record[0])
-
-
-    def test_insert_static_data(self):
-        self.test_api.get_profession_index = AsyncMock(
-            return_value={"professions": [{"id": 2, "name": "test"}]}
-        )
-        self.test_api.get_profession_tiers = AsyncMock(
-            return_value={"id": 1, "skill_tiers": [{"name": "Test", "id": 2}]}
-        )
-        self.test_api.get_profession_tier_categories = AsyncMock(
-            return_value={
-                "categories": [
-                    {
-                        "name": "Test Category 2",
-                        "recipes": [{"name": "Test Recipe", "id": 2}],
-                    }
-                ]
-            }
-        )
-        self.test_api.get_recipe = AsyncMock(return_value = {
-            'id':1,
-            'name':'Test recipe',
-            'crafted_item': {'id':2, 'name':'item_test'},
-            'crafted_quantity': {'value':2},
-            'reagents': [{'reagent': {'id':2, 'name':'item_test'}, 'quantity':2}]
-        })
-        mock_items_json = {
-                    'items':[
-                        {
-                            'id':3,
-                            'purchase_price':2,
-                            'sell_price':2,
-                            'purchase_quantity':2,
-                            'quality': {'type':'EPIC'},
-                            'name': 'Test Epic item',
-                            'binding': {'type':'ON_ACQUIRE'}
-                        },
-                        {
-                            'id':4,
-                            'purchase_price':2,
-                            'sell_price':3,
-                            'purchase_quantity':3,
-                            'quality': {'type':'LEGENDARY'},
-                            'name': 'Test lego item',
-                        },
-                    ]
-                }
-        self.test_api.item_search = AsyncMock(return_value = mock_items_json)
-    
-        self.test_api.insert_static_data()
-
-        actual_profession_index_record = ProfessionIndex.objects.filter(id=2).values()
-        expected_profession_index_record = {'name':"test", 'id':2}
-        self.assertDictEqual(expected_profession_index_record, actual_profession_index_record[0])
-
-        actual_profession_tier_record = ProfessionTier.objects.filter(id=2).values()
-        expected_profession_tier_record = {'id':2, 'name':"Test", 'profession_id':2}
-        self.assertEqual(expected_profession_tier_record, actual_profession_tier_record[0])
-
-        actual_record_category = RecipeCategory.objects.filter(name="Test Category 2").values()
-        actual_record_recipe = Recipe.objects.filter(id=2).values()
-        expected_record_category = {
-            'id':3,
-            'name':'Test Category 2',
-            'profession_tier_id': 2,
-        }
-        expected_record_recipe = {
-            'id':2,
-            'name':'Test Recipe',
-            'recipe_category_id': 3,
-        }
-
-        self.assertEqual(expected_record_category, actual_record_category[0])
-        self.assertEqual(expected_record_recipe, actual_record_recipe[0])
-
-        actual_recipe_record = Recipe.objects.filter(id=1).values()
-        mats = Recipe.objects.filter(id=1)[0].mats.all().values()
-
-        expected_recipe_record = {
-            'id':1,
-            'name':'Test recipe',
-            'recipe_category_id':1,
-        }
-        expected_recipe_record_mats0 = {
-            'id':1,
-            'item_id':1,
-            'quantity':1
-        }
-        expected_recipe_record_mats1 = {
-            'id':3,
-            'item_id':2,
-            'quantity':2
-        }
-
-        self.assertDictEqual(expected_recipe_record, actual_recipe_record[0])
-        self.assertDictEqual(expected_recipe_record_mats0, mats[0])
-        self.assertDictEqual(expected_recipe_record_mats1, mats[1])
-
-        actual_items_record = Item.objects.filter(vendor_buy_price=2).values()
-        expected_items_record = [
-            {'id': 3, 'vendor_buy_price': 2, 'vendor_sell_price': 2, 'vendor_buy_quantity': 2, 'quality': 'EPIC', 'name': 'Test Epic item', 'binding': 'ON_ACQUIRE'},
-            {'id': 4, 'vendor_buy_price': 2, 'vendor_sell_price': 3, 'vendor_buy_quantity': 3, 'quality': 'LEGENDARY', 'name': 'Test lego item', 'binding': None}
-        ]
-        self.assertEqual(expected_items_record[0], actual_items_record[0])
-        self.assertEqual(expected_items_record[1], actual_items_record[1])
 
 
     def test_calculate_market_price(self):
@@ -470,5 +365,127 @@ class TestWithEmptyDB(TestCase):
         self.assertDictEqual(expected_record[1], regions[1])
         self.assertDictEqual(expected_record[2], regions[2])
 
-    def test_insert_all_data(self):
-        pass
+    def test_insert_all_items(self):
+        self.test_api.insert_all_item()
+
+
+class TestProfessionInserts(TestCase):
+    with aioresponses() as mocked:
+        mocked.post(
+            urls["access_token"].format(region='us'),
+            payload={"access_token": "0000000000000000000000000000000000"},
+        )
+        test_api = async_to_sync(Insert.create)("us")
+    profession_tree = [
+        {
+            'name' : "Test Profession",
+            'id' : 1,
+            'skill_tiers' : [
+                {
+                    'name' : 'Test Tier',
+                    'id' : 2,
+                    'categories' : [
+                        {
+                            'name' : 'Test Category',
+                            'recipes' : [
+                                {
+                                    'id' : 3,
+                                    'name' : 'Test Recipe A',
+                                    'crafted_quantity' : {
+                                        'value' : 1
+                                    },
+                                    'crafted_item' : {
+                                        'id' : 1,
+                                        'name' : 'Test Item A'
+                                    },
+                                    'reagents' : [
+                                        {
+                                            'quantity' : 1,
+                                            'reagent' : {
+                                                'id' : 92,
+                                                'name' : 'Test Mat Item'
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    'id' : 4,
+                                    'name' : 'Test Recipe B',
+                                    'crafted_quantity' : {
+                                        'minimum' : 1,
+                                        'maximum' : 1,
+                                    },
+                                    'alliance_crafted_item' : {
+                                        'id' : 2,
+                                        'name' : 'Test Item B'
+                                    },
+                                    'horde_crafted_item' : {
+                                        'id' : 3,
+                                        'name' : 'Test Item C'
+                                    },
+                                },
+                                {
+                                    'id' : 5,
+                                    'name' : 'Test Recipe C',
+                                    'crafted_item' : {
+                                        'id' : 4,
+                                        'name' : 'Test Item D'
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+    
+    def test__insert_profession_index(self):
+        self.test_api._insert_profession_index(self.profession_tree)
+        actual_record = ProfessionIndex.objects.all().values()[0]
+        expected_record = {'id' : 1, 'name' : 'Test Profession'}
+        self.assertDictEqual(expected_record, actual_record)
+    
+    def test__insert_skill_tiers(self):
+        inserted_professions = self.test_api._insert_profession_index(self.profession_tree)
+        self.test_api._insert_skill_tiers(self.profession_tree, inserted_professions)
+        actual_record = ProfessionTier.objects.all().values()[0]
+        expected_record = {'id': 2, 'name': 'Test Tier', 'profession_id': 1}
+        self.assertDictEqual(expected_record, actual_record)
+
+    def test__insert_skill_tier_categories(self):
+        inserted_professions = self.test_api._insert_profession_index(self.profession_tree)
+        inserted_tiers = self.test_api._insert_skill_tiers(self.profession_tree, inserted_professions)
+        self.test_api._insert_skill_tier_categories(self.profession_tree, inserted_tiers)
+        actual_record = RecipeCategory.objects.all().values()[0]
+        expected_record = {"id": 2, "name": "Test Category", "profession_tier_id": 2}
+        self.assertDictEqual(expected_record, actual_record)
+    
+    def test__insert_all_recipes(self):
+        inserted_professions = self.test_api._insert_profession_index(self.profession_tree)
+        inserted_tiers = self.test_api._insert_skill_tiers(self.profession_tree, inserted_professions)
+        inserted_categories = self.test_api._insert_skill_tier_categories(self.profession_tree, inserted_tiers)
+        self.test_api._insert_all_recipes(self.profession_tree, inserted_categories)
+
+        actual_recipe_records = Recipe.objects.all().values()
+        actual_product_records = Product.objects.all().values()
+        actual_mat_record = Material.objects.all().values()
+
+        for recipe_count, actual_recipe_record in enumerate(actual_recipe_records):
+            expected_id = recipe_count + 3
+            expected_name  = f'Test Recipe {ascii_uppercase[recipe_count]}'
+            expected_recipe_record = {'id' : expected_id, 'name' : expected_name, 'recipe_category_id' : 1}
+            self.assertDictEqual(expected_recipe_record, actual_recipe_record)
+
+        expected_product_records = [
+            {'id': 1, 'item_id': 1, 'recipe_id': 3, 'min_quantity': 1, 'max_quantity': 1},
+            {'id': 2, 'item_id': 2, 'recipe_id': 4, 'min_quantity': 1, 'max_quantity': 1},
+            {'id': 3, 'item_id': 3, 'recipe_id': 4, 'min_quantity': 1, 'max_quantity': 1},
+            {'id': 4, 'item_id': 4, 'recipe_id': 5, 'min_quantity': 0, 'max_quantity': 0},
+        ]
+        for index, expected_product_record in enumerate(expected_product_records):
+            self.assertDictEqual(expected_product_record, actual_product_records[index])
+
+        expected_mat_record = {'id': 1, 'item_id': 92, 'recipe_id': 3, 'quantity': 1}
+        self.assertDictEqual(expected_mat_record, actual_mat_record[0])
+
