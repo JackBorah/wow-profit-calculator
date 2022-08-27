@@ -96,6 +96,9 @@ class ItemBonus(models.Model):
 class ProfessionIndex(models.Model):
     """The model for all professions.
 
+    The Auto incrementing primary key doesn't resert to zero if
+    records are deleted from the db.
+
     Attributes:
         id (IntegerField): The id of the profession. Primary Key.
         name (CharField): The name of the profession. Max_length = 50.
@@ -131,7 +134,7 @@ class RecipeCategory(models.Model):
         name (CharField): The category name. Max length = 50.
         profession_tier (ForeginKey): The tier the category belongs to.
     """
-    id = models.AutoField(primary_key=True)
+
     name = models.CharField(max_length=100)
     profession_tier = models.ForeignKey("ProfessionTier", on_delete=models.CASCADE)
 
@@ -149,7 +152,6 @@ class Recipe(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=100)
     recipe_category = models.ForeignKey("RecipeCategory", on_delete=models.CASCADE)
-    mats = models.ManyToManyField("Material")
 
 
 class Material(models.Model):
@@ -160,6 +162,7 @@ class Material(models.Model):
         quantity(IntegerField): The amount of the material
     """
     item = models.ForeignKey("Item", on_delete=models.CASCADE)
+    recipe = models.ForeignKey("Recipe", on_delete=models.CASCADE)
     quantity = models.IntegerField()
 
 class Product(models.Model):
