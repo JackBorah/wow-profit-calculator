@@ -1,0 +1,5 @@
+{% if product_auction_set|length != 1 %}
+<!--Toggle between alliance and horde products. Change prices to match.-->
+<input type="checkbox" id="faction_toggle_button" onclick="handleFactionToggle()">
+<label for="faction" id="faction_toggle_label">Alliance</label>
+{% endif %}
