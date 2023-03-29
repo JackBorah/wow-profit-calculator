@@ -17,7 +17,6 @@ django.setup()
 
 from calculator import models
 
-
 def consume_realm(region_api: WowApi) -> dict:
     """Gets all the realms for a region and yields the values to be inserted into the db.
 
@@ -29,6 +28,7 @@ def consume_realm(region_api: WowApi) -> dict:
     """
 
     json = region_api.connected_realm_search()
+    region_objects = models.Realm.objects.all()
 
     for connected_realm in json[
         "results"
@@ -43,6 +43,8 @@ def consume_realm(region_api: WowApi) -> dict:
             region = realm["region"]["name"]["en_US"]
             timezone = realm["timezone"]
             play_style = realm["type"]["type"]
+
+            region = region_objects.objects.get(region=region)
             yield {
                 "connected_realm_obj": connected_realm_obj,
                 "population": population,
@@ -381,18 +383,25 @@ def consume_all_item(region_api: WowApi) -> dict:
     json = region_api.item_search(
         **{"id": f"({0},)", "orderby": "id", "_pageSize": 1000}, timeout=(3, 60)
     )
-    while json[
-        "results"
-    ]:  # as long as json is redefined by the loop body and that is visable to the while loop it will work
-        for item in json["results"]:
-            item_id = item["data"]["id"]
-            name = item["data"]["name"]["en_US"]
-            yield {"item_id": item_id, "name": name}
-        last_id = json["results"][-1]["data"]["id"]
-        json = region_api.item_search(
-            **{"id": f"({last_id},)", "orderby": "id", "_pageSize": 1000},
-            timeout=(3, 60),
-        )
+    items_data = []
+    for item in json["items"]:
+        id = item['id']
+        vendor_buy_price = item['purchase_price']
+        vendor_sell_price = item['sell_price']
+        vendor_buy_quantity = item['purchase_quantity']
+        quality = item['quality']['name']
+        name = item['name']
+        if item.get('binding'):
+            binding = item['binding']['name']
+        
+    last_id = json["results"][-1]["data"]["id"]
+    json = region_api.item_search(
+        **{"id": f"({last_id},)", "orderby": "id", "_pageSize": 1000},
+        timeout=(3, 60),
+    )
+    #TODO Finish updating insert all items for new model.
+    #then make a insert item function that only inserts chosen ids
+    #or modify this one to insert specified ids, optionally all
 
 
 def insert_all_item(region_api: WowApi) -> None:
@@ -409,12 +418,20 @@ def insert_all_item(region_api: WowApi) -> None:
         count += 1
     print("All items inserted")
 
+def insert_regions():
+    regions = ['North America', 'Europe', 'Korea']
+    for region in regions:
+        record = models.Region(region=region)
+        record.save()
+
 def insert_all_data():
     us_region_api = WowApi("us", "en_US")
     eu_region_api = WowApi("eu", "en_US")
     kr_region_api = WowApi("kr", "en_US")
 
     region_api_list = [us_region_api, eu_region_api, kr_region_api]
+
+    insert_regions()
     for region_api in region_api_list:
         insert_connected_realms_index(region_api)
         insert_realm(region_api)

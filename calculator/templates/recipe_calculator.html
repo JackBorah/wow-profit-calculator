@@ -1,87 +1,147 @@
+<!--
+  Manual tasks
+  1. Setting a field on all reagent tiers to distinguish them in the correct order. So they are sortable from least to greatest
+  2.  
+-->
+<!--
+  Notes:
+How should hourly updates be handled? Probally have them update when the page is refreshed and not passivly when open.
+
+Problem with some item ids. They are out of order for their tiers. Draconium's lowest id is its teir 2
+              then tier 1 and finally teir 3. No api data distinguishes them in proper order. Another item ysrmerald
+              are in proper order with tier1, tier2, teir3 ids.
+-->
+
 {% extends "base_template.html" %}
 
 {% block body %}
-    <h1>{{ recipe.name }}</h1>
+    {% load static %}
+
+    <h1>{{ name }}</h1>
+
+    <h3>Crafting Stats</h3>
+    {% comment %} <label for="user_skill">Skill</label> {% endcomment %}
+    {% comment %} <input type="number" id="user_skill" onchange="calculate_profit()" value="{{ user_skill }}"> {% endcomment %}
+    <label for="inspiration">Inspiration</label>
+    <input type="number" id="inspiration" onchange="calculate_profit()" value="{{ inspiration }}">
+    {% comment %} <label for="skill_from_inspiration">Skill from inspiration</label>
+    <input type="number" id="skill_from_inspiration" onchange="calculate_profit()" value="{{ skill_from_inspiration }}"> {% endcomment %}
+    <label for="resourcefulness">Resourcefulness</label>
+    <input type="number" id="resourcefulness" onchange="calculate_profit()" value="{{ resourcefulness }}">
+    <label for="multicraft">Multicraft</label>
+    <input type="number" id="multicraft" onchange="calculate_profit()" value="{{ multicraft }}">
+
+    <!--
+      Materials effect on skill:
+        The skill bonus from high quality mats is recipe_skill * 0.25 with all t3 mats. 
+        At all t2 mats the skill bonus is 1/2 * recipe_skill * 0.25 or half of skill with t3 mats.
+        You can mix all the tiers and get different skill but there is isn't a simple formula to figure these values out.
+        What to do? 
+        1. Only allow users to enter in the tier of all mats. Aka all mats t1 or t2 or t3. No mixing.
+           This isn't a percise solution since expensive crafts like those using illimited diamonds have much different
+           profitablility if you can manage to make them with t2 diamond while the other mats are t3. But it is a useful estimate
+           of profit I think. 
+        2. Leave a box for people to enter in their own skill bonus from mats and use that in the skill calculation
+        3. Remove the skill calculation all together. Have selects for people to pick the tiers of normal and inspired
+           product tiers. Which updates input associated with them. Then the profit calculator will pull the price from these.
+           Remove skill from inspiration box as it is now useless. This means prices and the calculate is most accurate
+           but people need to do their own inspiration skill calculation to make sure they actually inspire to the next tier.
+
+        How to improve.
+        When someone figures out the math implement it into the calculator.
+        or
+        Figure out how to get the exact skill given by each mat tier. Maybe I can use lua to pull it out of the game?
+        Could also manually get the values of all mats in all recipes, but thats a lot of work. 
+      How many material tiers?
+        I thought there could be 3 or 5 tiers since darkmoon deck boxes use a crafted item which normally have 5 tiers.
+        But darkmoon decks seem to not have a quality like other crafted gear. That means all mats I can think of have 3 tiers.
+        So selects can have 3 options instead of a loop. This also means selecting a tier for all mats at once is easy.
+    -->
     <div id="materials">
       <h4>Materials</h4>
-      {% for mat in mats_auction_set %}
-        <h5>{{ mat.0.item.name }}  x<span class="matQuantity">{{ mat.0.quantity }}</span></h5>
-        {% if mat.1.0.buyout != None %}
-        <input type="number" id="{{ mat.id }}" class="mat" onchange="calculatePL()" value="{{ mat.1.0.buyout }}"/>
-        {% elif mat.1.0.unit_price != None %}
-        <input type="number" id="{{ mat.id }}" class="mat" onchange="calculatePL()" value="{{ mat.1.0.unit_price }}"/>
-        {% else %}
-        <input type="number" id="{{ mat.id }}" class="mat" onchange="calculatePL()" value="{{ mat.1.0.bid }}"/>
-        {% endif %}
+      {% for mat in mats %}
+        <h5>{{ mat.name }} x <span class="matQuantity">{{ mat.quantity }}</span></h5>
+        <label for="mat_{{ forloop.counter }}_select">Tier</label>
+        <select onchange="handleChangingTier(this)" id="mat_{{ forloop.counter }}_select" matindex="{{ forloop.counter0 }}">
+        {% for tier in mat.tiers %}
+          <option value="{{ tier.num }}">{{ tier.num }}</option>
+        {% endfor %}
+        </select>
+        <input type="number" id="mat_{{ forloop.counter0 }}_input" class="mat_input" onchange="calculate_profit()" value="{{mat.tiers.0.buyout}}"/>
       {% endfor %}
     </div>
-    <h4>Product</h4>
-    {% if product_auction_set|length != 1 %}
-    <!--Toggle between alliance and horde products. Change prices to match.-->
 
-    <input type="checkbox" id="faction_toggle_button" onclick="handleFactionToggle()">
-    <label for="faction" id="faction_toggle_label">Alliance</label>
-    {% endif %}
+    <!--TODO lists generates checkboxes which reveals an input box when the box is checked
+        prices of these optional mats would only be added to the cost when checked obviously
+        not optional mats but required mats like draconium ore are listed under optional_reagents
+        in the json. They are distinguished with "(DNT)" i don't know what it means but all required
+        mats have that part of its string. The view should put mats with "(DNT)" into the mats list above
+        and the rest in optional_mats list in the context.-->
+    <!--
+      1. Write js func that shows input price box when the associated checkbox is checked
+      2. Write js so the checked boxes will have their inputbox's values (gold value) added to the cost
+      3. In a view pick out optional mats with (DNT) in the string and place into mats
+      4. Need to select tier of optional mats somehow
+      5. Can optional reagents be saved with resourcefulness?
+     -->
 
-    {% if product_auction_set.0.1.0.buyout != None %}
-    <input type="number" id="product" onchange="calculatePL()" value="{{ product_auction_set.0.1.0.buyout }}"/>
-    {% elif product_auction_set.0.1.0.unit_price != None %}
-    <input type="number" id="product" onchange="calculatePL()" value="{{ product_auction_set.0.1.0.unit_price }}"/>
-    {% else %}
-    <input type="number" id="product" onchange="calculatePL()" value="{{ product_auction_set.0.1.0.bid }}"/>
-    {% endif %}
+    <div id="optional materials">
+      <h4>Optional Materials</h4>
+      {% for optional_mat in optional_mats %}
+        <label for="optional_mat_{{ forloop.counter0 }}_select"> {{ optional_mat.name }}</label>
+        <input type="checkbox" id="optional_mat_{{ forloop.counter0 }}_checkbox" onchange="calculate_profit()" class="optional_mat_checkbox" matindex="{{ forloop.counter0 }}">
+
+        <label for="optional_mat_{{ forloop.counter0 }}_select">Tier</label>
+        <select id="optional_mat_{{ forloop.counter0 }}_select" onchange="handleChangingTier(this)" matindex="{{ forloop.counter0 }}">
+          {% for tier in optional_mat.tiers %}
+            <option value="{{ tier.num }}">{{ tier.num }}</option>
+          {% endfor %}
+        </select>
+
+        <input type="number" id="optional_mat_{{ forloop.counter0 }}_input" class="optional_mat" onchange="calculate_profit()" value="{{ optional_mat.tiers.0.buyout }}" matindex="{{ forloop.counter0 }}"/>
+      {% endfor %}
+    </div>
+
+    <!--
+      The tier of the product and its price should be determined based on users skill level.
+      Skill level will come from sessions as the user will need to set their prof's skill tree
+      Skill level for each recipe needs to be done by had as i don't think skill is anywhere in the api
+      Math for the which breakpoints determine product tier is googleable. Do need to determine if it rounds down or up
+      Inspiration will only be profitable if it upps the tier. If inspiratinos skil bonus don't upgrade then its 0
+    -->
+
+    <div id="product_container">
+      <h4>Product</h4>
+      <h5>{{ product.name }}</h5>
+
+      <label for="product_select">Tier</label>
+      <select id="product_select" onchange="handleChangingTier(this)">
+        {% for tier in product.tiers %}
+          <option value="{{ tier.num }}">{{ tier.num }}</option>
+        {% endfor %}
+      </select>
+      <input type="number" id="product_input" onchange="calculate_profit()" value="{{ product.tiers.0.buyout }}"/>
+
+      <label for="inspired_product_select">Tier when inspired</label>
+      <select id="inspired_product_select" onchange="handleChangingTier(this)">
+        {% for tier in product.tiers %}
+          <option value="{{ tier.num }}">{{ tier.num }}</option>
+        {% endfor %}
+      </select>
+      <input type="number" id="inspired_product_input" onchange="calculate_profit()" value="{{ product.tiers.0.buyout }}"/>
+    </div>
+
+    <h4>Cost</h4>
+    <input type="number" id="cost" value="0"/>
+    <h4>Average Product Value</h4>
+    <input type="number" id="avgerage_value_input" value="0">
+    <h4>Profit</h4>
     <input type="number" id="profit" value="0"/>
-{% if product_auction_set|length != 1 %}
-<!--Script for alliance/horde toggle-->
-<script>
-  var alliance_product_buyout = {{ product_auction_set.0.1.0.buyout|escapejs }}
-  var horde_product_buyout = {{ product_auction_set.1.1.0.buyout|escapejs }}
-  var alliance_product_bid = {{ product_auction_set.0.1.0.bid|escapejs }}
-  var horde_product_bid = {{ product_auction_set.1.1.0.bid|escapejs }}
-  var alliance_product_unit_price = {{ product_auction_set.0.1.0.unit_price|escapejs }}
-  var horde_product_unit_price = {{ product_auction_set.1.1.0.unit_price|escapejs }}
 
-  function handleFactionToggle() {
-    var toggle_label = document.getElementById("faction_toggle_label");
-    var product_input = document.getElementById("product");
-    if (toggle_label.innerHTML === "Horde") {
-      toggle_label.innerHTML = "Alliance";
-      if (alliance_product_buyout != "None") {
-        product_input.value = alliance_product_buyout;
-      } else if (alliance_product_unit_price != "None") {
-        product_input.value = alliance_product_unit_price;
-      } else {
-        product_input.value = alliance_product_bid;
-      }
-    } else if (toggle_label.innerHTML === "Alliance") {
-      toggle_label.innerHTML = "Horde";
-      if (horde_product_buyout != "None") {
-        product_input.value = horde_product_buyout;
-      } else if (horde_product_unit_price != "None") {
-        product_input.value = horde_product_unit_price;
-      } else {
-        product_input.value = horde_product_bid;
-      }
-    }
-    calculatePL()
-  }
-</script>
-{% endif %}
-<!--Script for calculator-->
-<script>
-  function calculatePL() {
-    let mats = document.querySelectorAll("input.mat");
-    let mats_quantity = document.querySelectorAll("h5 span")
-    let product = document.getElementById("product");
-    let profit = document.getElementById("profit");
-
-    let total = 0;
-    for (let i = 0; i < mats.length; i++) {
-      total += Number(mats[i].value) * Number(mats_quantity[i].innerHTML);
-    }
-    total = product.value - total;
-    profit.value = total;
-  }
-  calculatePL()
-</script>
+    
+    {{ mats|json_script:"mats" }}
+    {{ optional_mats|json_script:"optional_mats" }}
+    {{ product|json_script:"product" }}
+    {{ recipe_skill|json_script:"recipe_skill"}}
+    <script src={% static 'calculator/calculatePL.js' %}></script>
 {% endblock %}
