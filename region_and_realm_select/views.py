@@ -8,7 +8,6 @@ from calculator.models import Realm
 # Create your views here.
 
 class RegionAndRealmFormRedirectView(RedirectView):
-
     def get_redirect_url(self, *args, **kwargs):
         if self.request.session.get('region') and self.request.session.get('realm'):
             region = self.request.session.get('region')

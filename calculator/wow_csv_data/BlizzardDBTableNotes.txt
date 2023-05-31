@@ -1,0 +1,95 @@
+Better tables found later in development that I didn't crafted_item
+to change to using. 
+
+SkillLineAbility includes the tradeskill category, recipe id, and spell id in a single table
+
+ItemSparse contains info like vendor purchase and sell prices, max stack size, ...
+
+ProfessionXRating seems to contain something like item modifiers for a profession 
+stats like multicraft
+
+SpellReagents table contains a recipes reagents (not modified crafting reagents)
+and their counts and recraft counts
+
+CraftingData:
+    Table for some DragonFlight (or more expansions?) crafting items
+    For example:
+        Crafting Data id = 6 is for a shield of the hearth (192081) and shows this in CraftedItemID column
+        Crafting Data id = 7 is for the different qualities frostfire alloy which is given in the CraftingDatItemQuality table which refers to this crafting data id
+
+    Illusterious Insight (item=191529, spell=382381) doesn't have a crafting data record
+
+SpellEffect:
+    Table for all spells (recipes, combat, ...)
+
+    For example:
+        Illusterious Insight (item=191529, spell=382381) shows the item it produces under EffectItemType
+        Draconic Vial (item=191474, spell=374477) has the item's this spell produces under EffectMiscValue[0] which refers to a CraftingDataID=246 for these vials
+
+    Getting all recipe products from spell ids:
+        All recipes have a spell id (see SkillLineAbility for recipe and spell ids)
+        Some recipe spells show their products by crafting data in the EffectMiscValue[0] or item id in the EffectItemType column
+        # not all item products come with a crafting data id
+
+CraftingDataItemQuality:
+    Table for items with different qualitites like draconic vials grouped by their shared crafting data ids.
+    
+    Bugs:
+        CraftingDataID=1 has item ids which are missing from the items table
+
+
+SpellReagents:
+    Some recipe spells in 10.0.7 have different material needs vs the same spell in 10.1 this may reflect
+    mats being removed in 10.1 or its a bug between those versions.
+
+CraftingQuality:
+    Ids : QualityTier
+    1     1
+    2     2
+    3     3
+    These first 3 qualities are the qualities for all trade goods. Like draconic vials 1,2,3
+
+    The rest (ids: 4, 5, 6, 7, 8) are the ids for crafted weapons and gear and is used in their
+    modifier lists but not in their item records.
+
+Multicraft
+Not sure if the data contains info on what is multicraftable or what those rates are.
+Current theory:
+It may be that items with a quantity > 1 are all multicraftable since in 
+transmutations the transmutes that produce 2 quantity are multicraftable 
+while the transmutes that produce 1 (spellEffects value=1 (wowhead) or effectbasepoints=1) 
+is not multicraftable
+
+ProfessionEffectType:
+    Table of profession stats. See ProfessionEffect for the stats and amount of the stat.
+    The EnumId is the id refrenced in other tables.
+
+ProfessionEffect:
+    Table of profession stats (from ProfessionEffectType table) and the amount 
+    of that stat given.
+
+    Ex: 
+    Salad on the Side gives 90 multicraft. The record for this has EnumId 7 (multicraft)
+    and amount of 90. The id for this record is then used in CraftingReagentEffect
+    to connect it to the Salad on the Side Modified Crafting Category.
+
+    MCR_slots?
+    Some records have a MCR_slot id which all have the same ProfessionEffectTypeEnumID
+    this is because those slots are unlocked by that enumid. This ties into the in game
+    profession tree since you need to level up the profession tree to unlock these slots. 
+    If you look at their ProfessionEffectTypeEnumID its "Unlock Reagent Slot"
+
+CraftingReagentEffect:
+    This table tells what crafting stats a ModifiedCraftingCategory gives via its
+    ProfessionEffectId. Has a order column since a single ModifiedCraftingCategory
+    can have multiple ProfessionEffectId.
+
+    Ex:
+        Writhefire Oil increases difficulty and chance to skill up so its 
+        ModifiedCraftingCategory 127 has two different ProfessionEffectId's linked to it.
+
+    Ooey Goey Chocolate Increases the amount of item from multicraft. May need special
+    consideration since this is only done with this item while all other increased
+    multicraft output is from traits.
+    Shimmering Embroidery thread is similar to the choclate but for resourcefulness.
+    This one has its savings increased by 25% and 25 is given by its ProfessionEffectID

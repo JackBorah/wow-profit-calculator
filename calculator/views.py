@@ -10,34 +10,30 @@ class ProfessionIndexView(ListView):
     model = ProfessionIndex
     template_name = 'select_profession.html'
 
-# TODO From old design and probably useless since other expansions won't be included
-class ProfessionTiersIndexView(ListView):
-    # model = ProfessionTier
-    template_name = 'select_profession_tier.html'
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        chosen_profession = self.kwargs['profession']
-        # context['filtered_profession_tier_list'] = ProfessionTier.objects.filter(profession__name=chosen_profession)
+# # TODO From old design and probably useless since other expansions won't be included
+# class ProfessionTiersIndexView(ListView):
+#     # model = ProfessionTier
+#     template_name = 'select_profession_tier.html'
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         chosen_profession = self.kwargs['profession']
+#         # context['filtered_profession_tier_list'] = ProfessionTier.objects.filter(profession__name=chosen_profession)
 
-        if not context['filtered_profession_tier_list']:
-            raise Http404
+#         if not context['filtered_profession_tier_list']:
+#             raise Http404
     
-        return context
+#         return context
 
-class ProfessionTierCategoriesIndexView(ListView):
+class ProfessionCategoriesView(ListView):
     #needs categories and recipes to list recipes under their category
     model = RecipeCategory
     template_name = 'select_recipe_category.html'
-    # template_name = 'test.html'
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        chosen_tier = self.kwargs['tier']
-        context['filtered_profession_categories_list'] = RecipeCategory.objects.filter(profession_tier__name = chosen_tier)
-        context['recipe_list'] = Recipe.objects.filter(recipe_category__profession_tier__name = chosen_tier).order_by('name')
-        context['test'] = [1,2,3]
-
-        # if not context['filtered_profession_categories_list']:
-        #     raise Http404
+        profession_name=self.kwargs['profession']
+        context['profession_categories_list'] = RecipeCategory.objects.filter(profession__name=profession_name).order_by('name')
+        context['recipe_list'] = Recipe.objects.filter(recipe_category__profession__name=profession_name)
     
         return context
 
@@ -46,176 +42,189 @@ class RecipeCalculatorView(TemplateView):
     
     def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
         super_context = super().get_context_data(**kwargs)
-        # What needs to be here?
-        Recipe.objects.get()
 
-        context = {
-            "name" : "Test Recipe",
-            "recipe_skill" : 325,
-            "user_skill" : 150,
-            "inspiration" : 30,
-            "skill_from_inspiration" : 200,
-            "resourcefulness" : 60,
-            "multicraft" : 20,
-            "mats" : [
-                {
-                    "name" : "Test mat 1",
-                    "id" : 1,
-                    "quantity" : 3,
-                    "tiers" : [
-                        {
-                            "item_id" : 1,
-                            "num" : 1,
-                            "buyout" : 100,
-                        },
-                        {
-                            "item_id" : 2,
-                            "num" : 2,
-                            "buyout" : 200,
-                        },
-                        {
-                            "item_id" : 3,
-                            "num" : 3,
-                            "buyout" : 300,
-                        }
-                    ] 
-                },
-                {
-                    "name" : "Test mat 2",
-                    "id" : 2,
-                    "quantity" : 2,
-                    "buyout" : 1,
-                    "tiers" : [
-                        {
-                            "item_id" : 4,
-                            "num" : 1,
-                            "buyout" : 100,
-                        },
-                        {
-                            "item_id" : 5,
-                            "num" : 2,
-                            "buyout" : 200,
-                        },
-                        {
-                            "item_id" : 6,
-                            "num" : 3,
-                            "buyout" : 310,
-                        }
-                    ] 
-                },
-                {
-                    "name" : "Test mat 3",
-                    "id" : 3,
-                    "quantity" : 1,
-                    "buyout" : 0,
-                    "tiers" : [
-                        {
-                            "item_id" : 7,
-                            "num" : 1,
-                            "buyout" : 100,
-                        },
-                        {
-                            "item_id" : 8,
-                            "num" : 2,
-                            "buyout" : 200,
-                        },
-                        {
-                            "item_id" : 9,
-                            "num" : 3,
-                            "buyout" : 300,
-                        },
-                        {
-                            "item_id" : 10,
-                            "num" : 4,
-                            "buyout" : 400,
-                        },
-                        {
-                            "item_id" : 11,
-                            "num" : 5,
-                            "buyout" : 500,
-                        }
-                    ] 
-                },
-            ],
-            "optional_mats" : [
-                {
-                    "name" : "Optional mat 1",
-                    "tiers" : [
-                        {
-                            "item_id" : 4,
-                            "num" : 1,
-                            "buyout" : 100,
-                            "inspiration" : 10,
-                        },
-                        {
-                            "item_id" : 5,
-                            "num" : 2,
-                            "buyout" : 200,
-                            "inspiration" : 20,
-                        },
-                        {
-                            "item_id" : 6,
-                            "num" : 3,
-                            "buyout" : 310,
-                            "inspiration" : 30,
-                        }
-                    ]
-                },
-                {
-                    "name" : "Optional mat 2",
-                    "item_id" : 2,
-                    "tiers" : [
-                        {
-                            "item_id" : 4,
-                            "num" : 1,
-                            "buyout" : 100,
-                        },
-                        {
-                            "item_id" : 5,
-                            "num" : 2,
-                            "buyout" : 200,
-                        },
-                        {
-                            "item_id" : 6,
-                            "num" : 3,
-                            "buyout" : 310,
-                        }
-                    ]
-                },
-            ],
-            "product" : {
-                "num_of_tiers": 5,
-                "multicraftable": "FALSE",
-                "name": "Test product name",
-                "tiers": [
+        recipe = Recipe.objects.get(id=self.kwargs["pk"])
+        materials_list = recipe.material_set.all()
+        optional_materials_list = recipe.optionalmaterial_set.all()
+        formatted_materials = []
+        # normal mats don't have different qualities except required optional mats
+        for optional_material in optional_materials_list:
+            if not optional_material.is_required:
+                continue
+
+            if optional_material.quantity == 0:
+                continue
+
+            single_material = {
+                "name" : optional_material.optional_material_slot.name,
+                "id" : optional_material.id, # not sure which id this key refers too
+                "quantity" : optional_material.quantity,
+                "tiers" : []
+            }
+            formatted_materials.append(single_material)
+            relationship = optional_material.optional_material_slot.categoryreagentslotrelationship_set.get()
+            modified_crafting_reagent_item_set = relationship.category.modifiedcraftingreagentitem_set.all()
+
+            if len(modified_crafting_reagent_item_set) > 1:
+                for MCR_item in modified_crafting_reagent_item_set:
+                    if MCR_item.id == 93:
+                        continue
+                    item = MCR_item.item_set.get()
+                    tier = {
+                        "name" : item.name,
+                        "num" : item.quality.quality_tier,
+                        "buyout" : 0,
+                    }
+                    single_material["tiers"].append(tier)
+
+            else:
+                item_set = optional_material.optional_material_slot.categoryreagentslotrelationship_set.get().category.modifiedcraftingreagentitem_set.get().item_set.all()
+                
+                for item in item_set:
+                    tier = {
+                        "name" : item.name,
+                        "num" : item.quality.quality_tier,
+                        "buyout" : 0,
+                    }
+                    single_material["tiers"].append(tier)
+
+        for material_record in materials_list:
+            if material_record.quantity == 0:
+                continue
+            single_material = {
+                "name" : material_record.item.name,
+                "id" : material_record.id, # not sure which id this key refers too
+                "quantity" : material_record.quantity,
+                "tiers" : [
                     {
-                        "buyout": 1,
-                        "item_id": 10,
-                        "num": 1
-                    },
-                    {
-                        "buyout": 2,
-                        "item_id": 20,
-                        "num": 2
-                    },
-                    {
-                        "buyout": 3,
-                        "item_id": 30,
-                        "num": 3
-                    },
-                    {
-                        "buyout": 4,
-                        "item_id": 40,
-                        "num": 4
-                    },
-                    {
-                        "buyout": 5,
-                        "item_id": 50,
-                        "num": 5
+                        "item_id" : material_record.item.id,
+                        "num" : material_record.item.quality, # should always be none since normal mats have no qualities
+                        "buyout" : 0
                     }
                 ]
+            }
+            formatted_materials.append(single_material)
+
+        formatted_optional_mat_slots = []
+        for optional_material in optional_materials_list:
+
+            if optional_material.is_required:
+                continue
+
+            category_slot_relationships = optional_material.optional_material_slot.categoryreagentslotrelationship_set.all()
+            optional_material_slot = {
+                "name" : optional_material.optional_material_slot.name,
+                "quantity" : optional_material.quantity,
+                "categories" : []
+            }
+            formatted_optional_mat_slots.append(optional_material_slot)
+            
+            for relation in category_slot_relationships:
+                category_record = relation.category
+                category = {
+                    "name" : category_record.name,
+                    "items" : []
+                }
+
+                optional_material_slot["categories"].append(category)
+
+                reagent_effects = category_record.craftingreagenteffect_set.all()
+                reagent_quality_stat_adjustments = category_record.craftingreagentquality_set.all()
+                MCR_items_from_category = relation.category.modifiedcraftingreagentitem_set.all()
+                for MCR_items in MCR_items_from_category:
+                    item_records = MCR_items.item_set.all()
+
+                    for item in item_records:
+                        if item.quality:
+                            quality = item.quality.quality_tier
+                        else:
+                            quality = 1
+                        item_json = {
+                            "item_id" : item.id,
+                            "name" : item.name,
+                            "quality" : quality,
+                            "buyout" : 0
+                        }
+                        category["items"].append(item_json)
+
+                        if not reagent_quality_stat_adjustments or item.id in (191535, 191536, 191537, 191253):
+                            continue
+                        item_stat_adjustment = reagent_quality_stat_adjustments.get(item__id=item.id) 
+                        reagent_effect_pct = item_stat_adjustment.reagent_effect_percent
+                        for effect in reagent_effects:
+                            amount = effect.profession_effect.amount
+                            amount_x_reagent_effect_pct = reagent_effect_pct * (amount / 100)
+                            effect_name = effect.profession_effect.profession_effect_type.name
+                            item_json[effect_name] = amount_x_reagent_effect_pct
+
+        product_set = recipe.product_set.all()
+        product_tiers = []
+        for product in product_set:
+            
+            if product.quantity > 1:
+                multicraftable = True
+            else:
+                multicraftable = False
+
+            if product.item.type.id == 2 or product.item.type.id == 4:
+                inspirable = True
+            else:
+                inspirable = False
+
+            item = product.item
+            if product.item.quality:
+                quality = item.quality.quality_tier
+            else:
+                quality = None
+            tier = {
+                "buyout": 0,
+                "item_id": item.id,
+                "num": quality
+            }
+            product_tiers.append(tier)
+
+        # Small
+        # TODO remove (DNT) from names
+        # order tiers as 1, 2, 3 
+        # select widgets with optgroups in optional material
+            # needs names in empower with training matrix instead of numbers
+            # empower also needs a better optgroup name
+            # empower also isn't a great label since the items that fit in that slot are not all called training matrixes
+            # lesser illusterious insight needs no select as their is no qualities to choose
+            # everything number wise needs to be displayed as 1, 2, 3
+        # products tier when inspired is useless right now
+        # all stats in the html is useless
+        # products like weapons and armor have one item id and are distinguished by bonus and modifier ids
+            # wowhead seems to have the bonus ids in the querystring and a good way to select them now
+            # how should this be displayed? Something to think about when adding live auction prices
+
+        # Major
+        # make add_optinoal_mats_stat_buffs work
+        # test everything?
+        # 
+
+        context = {
+            "name" : recipe.name,
+            "recipe_skill" : 0,
+            "user_skill" : 0,
+            "inspiration" : 0,
+            "skill_from_inspiration" : 0,
+            "resourcefulness" : 0,
+            "multicraft" : 0,
+            "mats" : formatted_materials,
+            "optional_mat_slots" : formatted_optional_mat_slots,
+            "product" : {
+                "quantity" : product.quantity,
+                "multicraftable": multicraftable, 
+                "inspirable": inspirable,
+                "name": product_set[0].item.name, # kinda reduntant with recipe name
+                "tiers": product_tiers
             },
         }
+        print(context["product"]["inspirable"])
+        # multiple tiers only exist for crafting goods
+        # food doesn't have different tiers
+        # equipment does but not distinct ids
         super_context.update(context)
         return super_context
     

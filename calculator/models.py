@@ -5,7 +5,7 @@ from django.db import models
 class Region(models.Model):
     """Server regions such as North America, Europe, Korea."""
     region = models.CharField(
-        max_length=30, help_text="North America, Europe, ...", primary_key=True
+        max_length=30, help_text="us, eu, kr", primary_key=True
     )
 
 class ConnectedRealmsIndex(models.Model):
@@ -130,6 +130,11 @@ class ModifierValue(models.Model):
     effect = models.TextField(blank=True, null=True)
 
 
+class Spell(models.Model):
+    id = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=100, blank=True, null=True)
+
+
 class ProfessionIndex(models.Model):
     """The model for all professions.
 
@@ -141,11 +146,10 @@ class ProfessionIndex(models.Model):
         name (CharField): The name of the profession. Max_length = 50.
     """
     id = models.IntegerField(primary_key=True)
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, unique=True)
 
     class Meta:
         ordering = ['id']
-
 
 class RecipeCategory(models.Model):
     """The model for recipe catagories. Ex: consumables
@@ -157,6 +161,11 @@ class RecipeCategory(models.Model):
 
     name = models.CharField(max_length=100)
     profession = models.ForeignKey("ProfessionIndex", on_delete=models.CASCADE)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['name', 'profession'], name='unique_category')
+        ] 
 
 class Recipe(models.Model):
     """The model for all recipes.
@@ -177,67 +186,110 @@ class Product(models.Model): # recipes can produce different quality versions of
     quantity = models.FloatField()
     recipe = models.ForeignKey("Recipe", on_delete=models.CASCADE)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['item', 'recipe'], name='unique_product')
+        ] 
+
 class Material(models.Model):
-    name = models.CharField(max_length=100)
+    item = models.ForeignKey("Item", on_delete=models.CASCADE)
     quantity = models.IntegerField(blank=True, null=True)
     recraft_quantity = models.IntegerField(blank=True, null=True)
     display_order = models.IntegerField(blank=True, null=True)
-    optional_material_slot = models.ForeignKey("OptionalMaterialSlot", on_delete=models.CASCADE, blank=True, null=True)
     recipe = models.ForeignKey("Recipe", on_delete=models.CASCADE)
 
-class OptionalMaterialSlot(models.Model):
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['item', 'recipe'], name='unique_material')
+        ] 
+
+class OptionalMaterial(models.Model):
+    quantity = models.IntegerField(blank=True, null=True)
+    recraft_quantity = models.IntegerField(blank=True, null=True)
+    display_order = models.IntegerField(blank=True, null=True)
+    optional_material_slot = models.ForeignKey("ModifiedCraftingReagentSlot", on_delete=models.CASCADE, blank=True, null=True)
+    recipe = models.ForeignKey("Recipe", on_delete=models.CASCADE)
+    is_required = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['recipe', 'optional_material_slot'], name='unique_optional_material')
+        ] 
+
+class ModifiedCraftingReagentSlot(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=100, blank=True, null=True)
 
+class CategoryReagentSlotRelationship(models.Model):
+    id = models.IntegerField(primary_key=True)
+    category = models.ForeignKey("ModifiedCraftingCategory", on_delete=models.CASCADE)
+    reagent_slot = models.ForeignKey("ModifiedCraftingReagentSlot", on_delete=models.CASCADE, related_query_name='categories')
+    order = models.IntegerField()
+
+class ModifiedCraftingCategory(models.Model):
+    id = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=200, blank=True, null=True)
+    description = models.CharField(max_length=200, blank=True, null=True)
+
+class ModifiedCraftingReagentItem(models.Model):
+    id = models.IntegerField(primary_key=True)
+    description = models.CharField(max_length=100, blank=True, null=True)
+    modified_crafting_category = models.ForeignKey("ModifiedCraftingCategory", on_delete=models.CASCADE, blank=True, null=True)
 
 class Item(models.Model):
     id = models.IntegerField(primary_key=True, db_index=True)
     quality = models.ForeignKey("CraftingQuality", on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length=100, blank=True, null=True)
     binding = models.CharField(max_length=50, blank=True, null=True)
+    type = models.ForeignKey("ItemType", on_delete=models.CASCADE, blank=True, null=True)
     MCR_item = models.ForeignKey("ModifiedCraftingReagentItem", on_delete=models.CASCADE, blank=True, null=True)
 
     def get_market_price(self):
         pass
 
+class ItemType(models.Model):
+    id = models.IntegerField(primary_key=True, db_index=True)
+    name = models.CharField(max_length=100, blank=True, null=True)
+
 class CraftingStats(models.Model):
-    item = models.OneToOneField("Item", on_delete=models.CASCADE)
-    resourcefulness = models.IntegerField(blank=True, null=True)
-    increase_material_from_resourcefulness = models.FloatField(blank=True, null=True)
+    item = models.OneToOneField("Item", on_delete=models.CASCADE, primary_key=True)
     inspiration = models.IntegerField(blank=True, null=True)
     skill_from_inspiration = models.FloatField(blank=True, null=True)
     multicraft = models.IntegerField(blank=True, null=True)
+    resourcefulness = models.IntegerField(blank=True, null=True)
+    increase_material_from_resourcefulness = models.FloatField(blank=True, null=True)
     skill = models.IntegerField(blank=True, null=True)
     crafting_speed = models.FloatField(blank=True, null=True)
-
-
-class Spell(models.Model):
-    id = models.IntegerField(primary_key=True)
-    name = models.CharField(max_length=100, blank=True, null=True)
-
 
 class CraftingQuality(models.Model):
     id = models.IntegerField(primary_key=True)
     quality_tier = models.IntegerField()
 
-
 class CraftingData(models.Model):
     id = models.IntegerField(primary_key=True)
 
-
-class ModifiedCraftingReagentSlot(models.Model):
-    id = models.IntegerField(primary_key=True)
+class ProfessionEffectType(models.Model):
+    id = models.IntegerField(primary_key=True) # called enum_id in blizzard's files
     name = models.CharField(max_length=100, blank=True, null=True)
-    modified_crafting_category = models.ManyToManyField("ModifiedCraftingCategory")
 
-
-class ModifiedCraftingCategory(models.Model):
+class ProfessionEffect(models.Model):
     id = models.IntegerField(primary_key=True)
-    name = models.CharField(max_length=100, blank=True, null=True)
-    description = models.CharField(max_length=100, blank=True, null=True)
+    profession_effect_type = models.ForeignKey("ProfessionEffectType", on_delete=models.CASCADE, blank=True, null=True)
+    amount = models.FloatField(blank=True, null=True)
+    MCR_slot = models.ForeignKey("ModifiedCraftingReagentSlot", on_delete=models.CASCADE, blank=True, null=True)
 
-
-class ModifiedCraftingReagentItem(models.Model):
+class CraftingReagentEffect(models.Model):
     id = models.IntegerField(primary_key=True)
-    description = models.CharField(max_length=100, blank=True, null=True)
+    profession_effect = models.ForeignKey("ProfessionEffect", on_delete=models.CASCADE, blank=True, null=True)
+    order = models.IntegerField()
     modified_crafting_category = models.ForeignKey("ModifiedCraftingCategory", on_delete=models.CASCADE, blank=True, null=True)
+
+class CraftingReagentQuality(models.Model):
+    id = models.IntegerField(primary_key=True)
+    order = models.IntegerField(blank=True, null=True)
+    item = models.ForeignKey("Item", on_delete=models.CASCADE, blank=True, null=True)
+    difficulty_adjustment = models.IntegerField(blank=True, null=True)
+    reagent_effect_percent = models.IntegerField(blank=True, null=True)
+    modified_crafting_category = models.ForeignKey("ModifiedCraftingCategory", on_delete=models.CASCADE, blank=True, null=True)
+
+ 

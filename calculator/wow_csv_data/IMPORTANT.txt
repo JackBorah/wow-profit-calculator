@@ -1,6 +1,0 @@
-Better tables found later in development that I didn't crafted_item
-to change to using. 
-
-SkillLineAbility includes the tradeskill category, recipe id, and spell id in a single table
-
-ItemSparse contains info like vendor purchase and sell prices, max stack size, ...

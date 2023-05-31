@@ -10,6 +10,6 @@ class RegionAndRealmForm(forms.Form):
     )
 
     region = forms.ChoiceField(choices=region_choices)
-    na_realm = forms.ModelChoiceField(queryset=Realm.objects.filter(region='North America'), label="North American Realms")
-    eu_realm = forms.ModelChoiceField(queryset=Realm.objects.filter(region='Europe'), label="European Realms")
-    kr_realm = forms.ModelChoiceField(queryset=Realm.objects.filter(region='Korea'), label="Korean Realms")
+    na_realm = forms.ModelChoiceField(queryset=Realm.objects.filter(region='us'), label="North American Realms")
+    # eu_realm = forms.ModelChoiceField(queryset=Realm.objects.filter(region='eu'), label="European Realms")
+    # kr_realm = forms.ModelChoiceField(queryset=Realm.objects.filter(region='kr'), label="Korean Realms")
