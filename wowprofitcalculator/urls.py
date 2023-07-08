@@ -18,6 +18,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('region_and_realm_select.urls')),
-    path('<region>/<realm>/', include('calculator.urls'))
+    path('', include('calculator.urls')),
+    # path('', include('region_and_realm_select.urls')),
+    # path('<region>/<realm>/', include('calculator.urls'))
 ]

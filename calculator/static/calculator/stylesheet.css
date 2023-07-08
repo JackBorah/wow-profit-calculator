@@ -1,0 +1,37 @@
+
+#link-home {
+    text-decoration: none;
+    color:black;
+}
+
+#professions-header {
+    text-align: center;
+    padding:50px;
+}
+
+#professions-container {
+    width:50%;
+    margin: auto;
+    display:flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.profession-link {
+    border: 2px solid grey;
+    margin: 4px;
+}
+
+@media screen and (max-width: 768px) {
+    h1 {
+        text-align: center;
+    }
+
+    #professions-container {
+        width:80%;
+        margin: auto;
+        display:flex;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}

@@ -124,7 +124,6 @@ class TestInsertAllRealms(TestCase):
             realm_record = await models.Realm.objects.aget(realm_id=realm_id)
             self.assertIsNotNone(realm_record)
 
-
 class TestInsertAllSpells(TestCase):
     spells = [
         ("spell_1", "name_1", "rank_1", "icon_1", "cost_1", "1"),

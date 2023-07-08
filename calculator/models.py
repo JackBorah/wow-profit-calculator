@@ -151,6 +151,15 @@ class ProfessionIndex(models.Model):
     class Meta:
         ordering = ['id']
 
+# comes from SkillLine file
+# ex 2823 is draong isles alchemy this goes here
+class ExpansionTier(models.Model):
+    """Ex: Dragon Flight Alchemy, Shadowlands Blacksmithing, ..."""
+    id = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=100, blank=True, null=True)
+    profession = models.ForeignKey("ProfessionIndex", on_delete=models.CASCADE)
+    index = models.IntegerField()
+
 class RecipeCategory(models.Model):
     """The model for recipe catagories. Ex: consumables
 
@@ -180,6 +189,8 @@ class Recipe(models.Model):
     recipe_category = models.ForeignKey("RecipeCategory", on_delete=models.CASCADE, blank=True, null=True)
     spell = models.ForeignKey("Spell", on_delete=models.CASCADE)
     crafting_data = models.ForeignKey("CraftingData", on_delete=models.CASCADE, blank=True, null=True)
+    # comes from skill line ability
+    # expansion_tier = models.ForeignKey("ExpansionTier", on_delete=models.CASCADE, blank=True, null=True)
 
 class Product(models.Model): # recipes can produce different quality versions of the same item
     item = models.ForeignKey("Item", on_delete=models.CASCADE)
@@ -292,4 +303,93 @@ class CraftingReagentQuality(models.Model):
     reagent_effect_percent = models.IntegerField(blank=True, null=True)
     modified_crafting_category = models.ForeignKey("ModifiedCraftingCategory", on_delete=models.CASCADE, blank=True, null=True)
 
- 
+# class TraitTree():
+#     """The profession specilization trees"""
+#     id = models.IntegerField(primary_key=True)
+#     index = models.IntegerField()
+#     expansion_tier = models.ForeignKey("ExpansionTier", on_delete=models.CASCADE, blank=True, null=True)
+#     first_node = models.ForeignKey("TraitNode", on_delete=models.CASCADE, blank=True, null=True)
+#     profession = models.ForeignKey("ProfessionIndex", on_delete=models.CASCADE, blank=True, null=True)
+#     name = models.CharField(max_length=100, blank=True, null=True) # first node name
+
+#     def build_tree(self):
+#         node_groups = TraitNodeGroup.objects.all()
+#         nodes = TraitNode.objects.all()
+#         node_group_x_nodes = TraitNodeGroupXTraitNode.objects.all()
+
+#         built_tree = {
+            
+#         }
+#     # trait tree
+#         # first node
+#             # leftTraitNodeGroup (children nodes)
+#                 # TraitNodeGroupXTraitNode (all the TraitNodes that are children)
+#                     # TraitNode 
+#                         # leftTraitNodeGroup
+#                             # TraitNodeGroupXTraitNode (perk children TraitNodes)
+#                                 # TraitNode
+#                                     # ...
+#                                 # TraitNode
+#                                     # ...
+#                                 # ...
+#                         # rightTraitNodeGroup (perk children)
+#                     # TraitNode
+#                         # leftTraitNodeGroup
+#                             # TraitNodeGroupXTraitNode (perk children TraitNodes)
+#                                 # TraitNode
+#                                     # ...
+#                                 # TraitNode
+#                                     # ...
+#                                 # ...
+#                         # rightTraitNodeGroup (perk children)
+#                     # ...
+#             # rightTraitNodeGroup (perk children)
+#                 # TraitNodeGroupXTraitNode (perk children TraitNodes)
+#                     # TraitNode
+#                         # ...
+#                     # TraitNode
+#                         # ...
+#                     # ...
+
+# class TraitNode():
+#     id = models.IntegerField(primary_key=True)
+#     name = models.CharField(max_length=100, blank=True, null=True)
+#     description = models.TextField(blank=True, null=True)
+#     max_ranks = models.IntegerField()
+#     effect = models.ForeignKey("ProfessionEffect", on_delete=models.CASCADE, blank=True, null=True)
+#     tree = models.ForeignKey("TraitTree", on_delete=models.CASCADE, blank=True, null=True)
+#     leftTraitNodeGroup = models.ForeignKey("TraitNodeGroup", on_delete=models.CASCADE, blank=True, null=True)
+#     rightTraitNodeGroup = models.ForeignKey("TraitNodeGroup", on_delete=models.CASCADE, blank=True, null=True)
+
+# # class TraitPath():
+# #     id = models.IntegerField(primary_key=True)
+# #     #chilren nodes
+# #     leftTraitNodeGroup = models.ForeignKey("TraitNodeGroup", on_delete=models.CASCADE, blank=True, null=True)
+# #     #perks
+# #     rightTraitNodeGroup = models.ForeignKey("TraitNodeGroup", on_delete=models.CASCADE, blank=True, null=True)
+# #     tree = models.ForeignKey("TraitTree", on_delete=models.CASCADE, blank=True, null=True)
+
+# class TraitNodeGroup():
+#     """
+#     Records here are used to group nodes.
+#     Ex: The leftTraitNodeGroup 2380 are the children nodes of Potion Mastery (frost, ...)
+#     rightTraitNodeGroup 2379 are the perks inside the TraitNode 19487
+#     """
+#     id = models.IntegerField(primary_key=True)
+#     tree = models.ForeignKey("TraitTree", on_delete=models.CASCADE, blank=True, null=True)
+
+# class TraitNodeGroupXTraitNode():
+#     """Child node groups and perk node groups"""
+#     id = models.IntegerField(primary_key=True)
+#     trait_node_group = models.ForeignKey("TraitNodeGroup", on_delete=models.CASCADE, blank=True, null=True)
+#     trait_node = models.ForeignKey("TraitNode", on_delete=models.CASCADE, blank=True, null=True)
+#     ordering = models.IntegerField()
+
+# class ProfessionTrait():
+#     id = models.IntegerField(primary_key=True)
+#     trait_node = models.ForeignKey("TraitNode", on_delete=models.CASCADE, blank=True, null=True)
+
+# class ProfessionTraitXEffect():
+#     id = models.IntegerField(primary_key=True)
+#     profession_trait = models.ForeignKey("ProfessionTrait", on_delete=models.CASCADE, blank=True, null=True)
+#     Profession_effect = models.ForeignKey("ProfessionEffect", on_delete=models.CASCADE, blank=True, null=True)

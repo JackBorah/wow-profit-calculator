@@ -1,13 +1,24 @@
 {% extends "base_template.html" %}
 
 {% block body %}
-    <h1>{{ view.kwargs.profession }} Categories</h1>
+    <h1>{{ view.kwargs.profession }}</h1>
     {% for recipe_category in profession_categories_list %}
         <h3>{{ recipe_category.name }}</h3>
         <ul>
         {% for recipe in recipe_list %}
             {% if recipe.recipe_category.name == recipe_category.name %}
-                <a href="{% url 'recipe-calculator' request.session.region request.session.realm view.kwargs.profession recipe_category.name recipe.id %}"><li>{{ recipe.name }}</li></a>
+            {% comment %}
+                <a href="{% url 'recipe-calculator' request.session.region request.session.realm view.kwargs.profession recipe_category.name recipe.id %}">
+                    <li>
+                        {{ recipe.name }}
+                    </li>
+                </a>
+            {% endcomment %}
+                <a href="{% url 'recipe-calculator' view.kwargs.profession recipe_category.name recipe.id %}">
+                    <li>
+                        {{ recipe.name }}
+                    </li>
+                </a>
             {% endif %}
         {% endfor %}
         </ul>

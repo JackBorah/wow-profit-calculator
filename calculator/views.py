@@ -55,8 +55,13 @@ class RecipeCalculatorView(TemplateView):
             if optional_material.quantity == 0:
                 continue
 
+            if "(DNT)" in optional_material.optional_material_slot.name:
+                item_name = optional_material.optional_material_slot.name[:-5]
+            else:
+                item_name = optional_material.optional_material_slot.name
+
             single_material = {
-                "name" : optional_material.optional_material_slot.name,
+                "name" : item_name,
                 "id" : optional_material.id, # not sure which id this key refers too
                 "quantity" : optional_material.quantity,
                 "tiers" : []
@@ -166,7 +171,8 @@ class RecipeCalculatorView(TemplateView):
             else:
                 multicraftable = False
 
-            if product.item.type.id == 2 or product.item.type.id == 4:
+            print(f"product {product.item.type.id}")
+            if product.item.type.id in [0, 2, 4, 7, 8]:
                 inspirable = True
             else:
                 inspirable = False
@@ -198,11 +204,6 @@ class RecipeCalculatorView(TemplateView):
             # wowhead seems to have the bonus ids in the querystring and a good way to select them now
             # how should this be displayed? Something to think about when adding live auction prices
 
-        # Major
-        # make add_optinoal_mats_stat_buffs work
-        # test everything?
-        # 
-
         context = {
             "name" : recipe.name,
             "recipe_skill" : 0,
@@ -221,75 +222,59 @@ class RecipeCalculatorView(TemplateView):
                 "tiers": product_tiers
             },
         }
-        print(context["product"]["inspirable"])
-        # multiple tiers only exist for crafting goods
-        # food doesn't have different tiers
-        # equipment does but not distinct ids
         super_context.update(context)
         return super_context
     
-    # Needs to get data and build a context object:
-    # Data Needed: 
-        # Recipe
-        # input and product items + all tiers of the items
-        # auctions filtered by item
-        # talent tree from session
-        # base skill from session
-        # optional materials stat buffs
-        # Needs skill for each recipe
-        # needs the prices of all tiers of item for inspiration purposes
-        # just found out that items don't have different ids per item level
-            # Means i need to figure out the bonus lists for each possible tier of item
-            # For tradeable items just check the auctions bonus list and compare to the ilevel
-            # I believe the item livel increases are constant between items
-            # meaning that a purple sword or shield of tier 1 would have the same skill requirements
-            # and their ilvl's would increase the exact same way when increasing the tier
-    # TODO 
-    # 1. context should have a buyout variable only change unit_price to buyout
-    # 2. This view should look at the recipe type and determine the crafting stats
-         # and send this to the html. Since different items will have different stats based on the skill tree choices
-    # 3. I think the session object makes html ugly. So take the useful session variables out in
-         # inside the view and assign them a good name like Inspiration instead of using request.session.inspiration
 
-    # model = Recipe
-       
-    # def get_context_data(self, **kwargs):
-    #     context = super(RecipeCalculatorView, self).get_context_data(**kwargs)
-        
-    #     realm = self.kwargs['realm']
-    #     #region = self.kwargs['region']
-    #     connected_realm_id = Realm.objects.get(name=realm, region=region).connected_realm.connected_realm_id
+#TODO Needs milling and prospecting, prices of legos, prices for untradable mats, 
+# intermediate prices like showing milling, ink, pigment, 
+# profits for making decks so you can choose the best, 
+# better prices like average minbuyout or 1st quartile of all servers in the region, 
+# showing all available auctions somewhere, a link to the change realm and server page, 
+# a searchbar, home button, nice looking header and footer, prettier design, 
+# displaying information on index pages like what the profit is on the recipes 
+# index page next to the detail recipe link, reorder profession tiers so latest 
+# expansion is at the top, add wow tooltips from wowhead, add ilvl and faction 
+# (if applicaple) to the recipe index view, link to undermine journal page for 
+# historical data, link to wowhead for the items (through the tooltip), 
+# add support for recieps with multiple products, add support for procs, 
+# add vendor purchase and sell prices to items, make calculator use min of 
+# vendor buy and auction prices,
 
-    #     product_auction_list = []
-    #     mat_auction_list = []
-
-    #     context['product_set'] = context['recipe'].product_set.all()
-    #     for product in context['product_set']:
-    #         products_and_auctions = []
-    #         products_and_auctions.append(product)
-    #         products_and_auctions.append(product.item.auction_set.filter(connected_realm_id=connected_realm_id).order_by('buyout' ,'bid' ,'unit_price'))
-    #         product_auction_list.append(products_and_auctions)
-    #     context['product_auction_set'] = product_auction_list #[[product, products_auctions], ...]
-
-    #     context['mats_set'] = context['recipe'].mats.all()
-    #     for mat in context['mats_set']:
-    #         mats_and_auctions = []
-    #         mats_and_auctions.append(mat)
-    #         mats_and_auctions.append(mat.item.auction_set.filter(connected_realm_id=connected_realm_id).order_by('buyout' ,'bid' ,'unit_price'))
-    #         mat_auction_list.append(mats_and_auctions)
-    #     context['mats_auction_set'] = mat_auction_list #[[mat, mat_auctions], ...]
-
-    #     return context
-
-#getting the profit/loss from milling/prospecting is easy. 
-#price*rate + ... for each pigment/gem from an herb/ore
-#Now how would the cost of herbs be found for a recipe?
-#I'm making a cost model. I can assume that the unused pigment is sold or unused.
-#So calculate the amount of herbs needed to make the recipe 
-#then decide to count unused as sold or not.
-#A problem is that pigments/inks may be sold very slowly so extras would be much lower than normal sale price to account for the high volume
-#A better solution (price wise) could be to make something else like tomes with extra inks. 
-#But i'm seeing that this is all modeling. The most useful system would say how to use leftovers
-#acutally links to recipes that use the leftovers would be best. 
-
-#TODO Needs milling and prospecting, prices of legos, prices for untradable mats, intermediate prices like showing milling, ink, pigment, profits for making decks so you can choose the best, better prices like average minbuyout or 1st quartile of all servers in the region, showing all available auctions somewhere, a link to the change realm and server page, a searchbar, home button, nice looking header and footer, prettier design, displaying information on index pages like what the profit is on the recipes index page next to the detail recipe link, reorder profession tiers so latest expansion is at the top, add wow tooltips from wowhead, add ilvl and faction (if applicaple) to the recipe index view, link to undermine journal page for historical data, link to wowhead for the items (through the tooltip), add support for recieps with multiple products, add support for procs, add vendor purchase and sell prices to items, make calculator use min of vendor buy and auction prices,
+class TalentTreeView(TemplateView):
+    # TODO move tree creation to a TraitTree model method, jot down somewhere to do the same with the rest of the views
+    context = {
+        "potion_mastery" : {
+            "trait_path" : {
+                "children_nodes" : [
+                    {
+                        "name" : "test name 1",
+                        "children_nodes" : [], # has no children
+                        "perk_nodes" : [
+                            {
+                                "name" : "test_perk_name_1",
+                                "max_ranks" : 1,
+                                "effect" : {
+                                    "type" : "test_stat",
+                                    "amount" : 30
+                                    }
+                            }
+                        ]
+                    },
+                    {
+                        "name" : "test name 2",
+                        "children_nodes" : [
+                            {
+                                "name" : "test name 3",
+                                "children_nodes" : [] # bottom most part of tree
+                            }
+                        ]
+                    }
+                ],
+                "perk_nodes" : [
+                    {},
+                    {}
+                ]
+            }
+        }
+    }

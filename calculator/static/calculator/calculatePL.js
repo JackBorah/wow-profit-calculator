@@ -82,6 +82,7 @@ const cost_input = document.querySelector("#cost");
 const inpsired_product_input = document.querySelector("#inspired_product_input");
 const average_value_input = document.querySelector("#avgerage_value_input");
 const profit_input = document.querySelector("#profit");
+const sagacious_incense_checkbox = document.querySelector("#sagacious_incense");
 
 function update_total_stats(event) {
     const base_inspitation_value = Number(base_inspiration_input.value);
@@ -95,6 +96,11 @@ function update_total_stats(event) {
     const base_multicraft_value = Number(base_multicraft_input.value);
     const optional_multicraft_value = Number(multicraft_optional_input.value);
     total_multicraft_input.value = base_multicraft_value + optional_multicraft_value;
+
+    const inspiration_buff = 20;
+    if (sagacious_incense_checkbox.checked) {
+        total_inspiration_input.value = (Number(total_inspiration_input.value) + inspiration_buff).toFixed(0);
+    }
 
     calculate_cost()
 }
@@ -114,19 +120,6 @@ function update_base_stats(event) {
     }
 
     update_total_stats();
-}
-
-function update_sagacious_incense(event) {
-    const sagacious_incense_checkbox = event.target;
-    const inspiration_buff = 20;
-    if (sagacious_incense_checkbox.checked) {
-        total_inspiration_input.value = (Number(total_inspiration_input.value) + inspiration_buff).toFixed(0);
-    }
-    else {
-        total_inspiration_input.value = (Number(total_inspiration_input.value) - inspiration_buff).toFixed(0);
-    }
-    
-    calculate_avg_product_value();
 }
 
 function update_optional_mat_stats(event) {
@@ -192,7 +185,7 @@ function calculate_avg_product_value() {
         average_value_input.value = avg_value.toFixed(2);
     }
     else {
-        average_value_input.value = calulate_value_with_inspiration(avg_value).toFixed(2);
+        average_value_input.value = calulate_value_with_inspiration(avg_value, product_quantity).toFixed(2);
     }
 
     calculate_profit()
@@ -212,10 +205,11 @@ function calculate_value_with_multicraft(product_value, product_quantity) {
     return (product_value * product_quantity) * (1-multicraft) + (product_value * product_quantity * multicraft_yield) * multicraft;
 }
 
-function calulate_value_with_inspiration(avg_value) {
+function calulate_value_with_inspiration(avg_value, product_quantity) {
+    console.log(product_quantity)
     const inspiration = Number(total_inspiration_input.value) / 100;
     const inspired_product_value = Number(inpsired_product_input.value);
-    return avg_value * (1 - inspiration) + inspired_product_value * inspiration;
+    return avg_value * (1 - inspiration) + (inspired_product_value * product_quantity) * inspiration;
 }
 
 function calculate_profit() {
@@ -236,9 +230,9 @@ for (let optional_mat_checkbox of optional_mat_checkboxes) {
     optional_mat_checkbox.addEventListener("change", update_optional_mat_stats);
 }
 for (let optional_mat_select of optional_mat_selects) {
-    optional_mat_select.addEventListener("change", update_optional_mat_stats)
+    optional_mat_select.addEventListener("change", update_optional_mat_stats);
 }
-document.querySelector("#sagacious_incense").addEventListener("change", update_sagacious_incense);
+document.querySelector("#sagacious_incense").addEventListener("change", update_total_stats);
 base_resourcefulness_input.addEventListener("change", update_base_stats);
 base_multicraft_input.addEventListener("change", update_base_stats);
 base_inspiration_input.addEventListener("change", update_base_stats);

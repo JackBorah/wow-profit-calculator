@@ -1,10 +1,22 @@
 {% extends "base_template.html" %}
 
 {% block body %}
-    <h1>Professions</h1>
-    {% for profession in professionindex_list %}
-        <a href="{% url 'select-recipe-category' request.session.region request.session.realm profession.name %}"><h3>{{ profession.name }}</h3></a>
-    {% empty %}
-        <h3>Error loading professions.</h3>
-    {% endfor %}
+    <main>
+        <h1 id="professions-header">Professions</h1>
+        <div id="professions-container">
+            {% for profession in professionindex_list %}
+            {% comment %}
+                <a href="{% url 'select-recipe-category' request.session.region request.session.realm profession.name %}"><h3>{{ profession.name }}</h3></a>
+            {% endcomment %}
+            {% comment %} <a href="{% url 'select-recipe-category' profession.name %}"><h3 class="profession-link">{{ profession.name }}</h3></a> {% endcomment %}
+            <a href="{% url 'select-recipe-category' profession.name %}">
+                <img class="profession-link" src="https://wow.zamimg.com/images/wow/icons/large/ui_profession_{{ profession.name|lower }}.jpg" alt="{{ profession.name }}" title="{{ profession.name }}">
+            </a>
+
+
+            {% empty %}
+                <h3>Error loading professions.</h3>
+            {% endfor %}
+        </div>
+    </main>
 {% endblock %}
