@@ -1,90 +1,100 @@
-<!--
-  Manual tasks
-  1. Setting a field on all reagent tiers to distinguish them in the correct order. So they are sortable from least to greatest
-  2.  
--->
-<!--
-  Notes:
-How should hourly updates be handled? Probally have them update when the page is refreshed and not passivly when open.
-
-Problem with some item ids. They are out of order for their tiers. Draconium's lowest id is its teir 2
-              then tier 1 and finally teir 3. No api data distinguishes them in proper order. Another item ysrmerald
-              are in proper order with tier1, tier2, teir3 ids.
-
-
--->
-
 {% extends "base_template.html" %}
 
 {% block body %}
     {% load static %}
-
     <h1>{{ name }}</h1>
-    <div id="crafting_stats">
-      <h3>Crafting Stats (whole number)</h3>
-      {% comment %} <label for="user_skill">Skill</label> {% endcomment %}
-      {% comment %} <input type="number" id="user_skill"  value="{{ user_skill }}"> {% endcomment %}
-      <div id="inspiration">
-        <h4>Inspiration</h4>
-        <label for="base_inspiration">Base Inspiration</label>
-        <input type="number" id="base_inspiration"  value="{{ inspiration }}">
-        <label for="inspiration_optional">Inspiration from Optional Materials</label>
-        <input type="number" id="inspiration_optional"  value="{{ inspiration }}">
-        <label for="sagacious_incense">Sagacious Incense +20</label>
-        <input type="checkbox" id="sagacious_incense"  value="20">
-        <label for="total_inspiration">Total Inspiration</label>
-        <input type="number" id="total_inspiration"  value="{{ inspiration }}">
-        {% comment %} <label for="skill_from_inspiration">Skill from inspiration</label>
-        <input type="number" id="skill_from_inspiration"  value="{{ skill_from_inspiration }}"> {% endcomment %}
-      </div>
 
-      <div id="resourcefulness">
-        <h4>Resourcefulness</h4>
-        <label for="base_resourcefulness">Base Resourcefulness</label>
-        <input type="number" id="base_resourcefulness"  value="{{ inspiration }}">
-        <label for="resourcefulness_optional">Resourcefulness from Optional Materials</label>
-        <input type="number" id="resourcefulness_optional"  value="{{ inspiration }}">
-        <label for="total_resourcefulness">Total Resourcefulness</label>
-        <input type="number" id="total_resourcefulness"  value="{{ resourcefulness }}">
-      </div>
-
-      <div id="multicraft">
-      <h4>Multicraft</h4>
-        <label for="base_multicraft">Base Multicraft</label>
-        <input type="number" id="base_multicraft"  value="{{ inspiration }}">
-        <label for="multicraft_optional">Multicraft from Optional Materials</label>
-        <input type="number" id="multicraft_optional"  value="{{ inspiration }}">
-        <label for="total_multicraft">Total Multicraft</label>
-        <input type="number" id="total_multicraft"  value="{{ multicraft }}">
-      </div>
-    </div>
-
-    <div id="materials">
-      <h4>Materials</h4>
-      {% for mat in mats %}
-        <div id="mat_{{ forloop.counter0 }}">
-          <h5>{{ mat.name }} x <span class="matQuantity">{{ mat.quantity }}</span></h5>
-          {% if mat.tiers.0.num %} <!--What does this check for?-->
-          <label for="mat_{{ forloop.counter }}_select">Tier</label>
-          <select id="mat_{{ forloop.counter }}_select" matindex="{{ forloop.counter0 }}">
-            {% for tier in mat.tiers %}
-            <option value="{{ tier.num }}">{{ tier.num }}</option>
-            {% endfor %}
-          </select>
-          {% endif %}
-          <input type="number" id="mat_{{ forloop.counter0 }}_input" class="mat_input" value="{{mat.tiers.0.buyout}}"/>
+    <main>
+      <h3 id="crafting_stats_header">Crafting Stats (whole number)</h3>
+      <div id="crafting_stats">
+        {% if product.inspirable %}
+        <div id="inspiration">
+          <h4>Inspiration</h4>
+          <div id="base_inspiration_container">
+            <label for="base_inspiration">Base</label>
+            <input type="number" id="base_inspiration"  value="{{ inspiration }}">
+          </div>
+          <div id="optional_inspiration_container">
+            <label for="inspiration_optional">From Optional Materials</label>
+            <input type="number" id="inspiration_optional"  value="{{ inspiration }}" readonly>
+          </div>
+          <div id="total_inspiration_container">
+            <label for="total_inspiration">Total</label>
+            <input type="number" id="total_inspiration"  value="{{ inspiration }}">
+          </div>
         </div>
-      {% endfor %}
-    </div>
+        {% endif %}
+        
+        <div id="resourcefulness">
+          <h4>Resourcefulness</h4>
+          <div>
+            <label for="base_resourcefulness">Base</label>
+            <input type="number" id="base_resourcefulness"  value="{{ inspiration }}">
+          </div>
+          <div>
+            <label for="resourcefulness_optional">From Optional Materials</label>
+            <input type="number" id="resourcefulness_optional"  value="{{ inspiration }}" readonly>
+          </div>
+          <div>
+            <label for="total_resourcefulness">Total</label>
+            <input type="number" id="total_resourcefulness"  value="{{ resourcefulness }}">
+          </div>
+        </div>
 
+        {% if product.multicraftable %}
+        <div id="multicraft">
+          <h4>Multicraft</h4>
+          <div>
+            <label for="base_multicraft">Base</label>
+            <input type="number" id="base_multicraft"  value="{{ inspiration }}">
+          </div>
+          <div>
+            <label for="multicraft_optional">From Optional Materials</label>
+            <input type="number" id="multicraft_optional"  value="{{ inspiration }}" readonly>
+          </div>
+          <div>
+            <label for="total_multicraft">Total</label>
+            <input type="number" id="total_multicraft"  value="{{ multicraft }}">
+          </div>
+        </div>
+        {% endif %}
+      </div>
 
-    <div id="optional_materials">
-      <h4>Optional Materials</h4>
-      {% for optional_mat_slot in optional_mat_slots %}
-        <div id="optional_mat_slot_{{ forloop.counter0 }}">
+      <h3>Materials</h4>
+      <div id="materials">
+        {% for mat in mats %}
+          <div id="mat_{{ forloop.counter0 }}" class="optional_mat_slot_container">
+            <label>{{ mat.name }} x <span class="matQuantity">{{ mat.quantity }}</span></label>
+            {% comment %} {% if mat.tiers.0.num %} <!--What does this check for?-->
+            <label for="mat_{{ forloop.counter }}_select">Tier</label>
+            <select id="mat_{{ forloop.counter }}_select" matindex="{{ forloop.counter0 }}">
+              {% for tier in mat.tiers %}
+              <option value="{{ tier.num }}">{{ tier.num }}</option>
+              {% endfor %}
+            </select>
+            {% endif %} {% endcomment %}
+            <input type="number" id="mat_{{ forloop.counter0 }}_input" class="mat_input" value="{{mat.tiers.0.buyout}}"/>
+          </div>
+        {% endfor %}
+      </div>
+
+      {% if optional_mat_slots %}
+      <h3>Optional Materials</h4>
+      <div id="optional_materials">
+        {% if product.inspirable %}
+        <div id="sagacious_incense_container" class="optional_mat_slot_container">
+          <label for="sagacious_incense">Sagacious Incense +20</label>
+          <div>
+          <input type="checkbox" id="sagacious_incense"  value="20">
+          <input id="sagacious_incense_input" type="number" value=0>
+          </div>
+        </div>
+        {% endif %}
+        {% for optional_mat_slot in optional_mat_slots %}
+        <div id="optional_mat_slot_{{ forloop.counter0 }}" class="optional_mat_slot_container">
           <label for="optional_mat_slot_{{ forloop.counter0 }}_checkbox"> {{ optional_mat_slot.name }} x <span class="optional_mat_quantity">{{ optional_mat_slot.quantity }}</span></label>
+          <div>
           <input type="checkbox" id="optional_mat_slot_{{ forloop.counter0 }}_checkbox" class="optional_mat_slot_checkbox" matindex="{{ forloop.counter0 }}">
-
           <label for="optional_mat_slot_{{ forloop.counter0 }}_select">Items</label>
           <select id="optional_mat_{{ forloop.counter0 }}_select" matindex="{{ forloop.counter0 }}" class="optional_mat_slot_select">
             {% for category in optional_mat_slot.categories %}
@@ -99,50 +109,53 @@ Problem with some item ids. They are out of order for their tiers. Draconium's l
           </select>
 
           <input type="number" id="optional_mat_{{ forloop.counter0 }}_input" class="optional_mat"  value="{{ optional_mat_slot.categories.0.items.0.buyout }}" matindex="{{ forloop.counter0 }}"/>
+          </div>
         </div>
-      {% endfor %}
-    </div>
+        {% endfor %}
+      </div>
+      {% endif %}
 
-    <div id="product_container">
-      <h4>Product x<span id="product_quantity">{{ product.quantity }}</span></h4>
-      {% if product.inspirable %}
-        <label for="product_select">Tier</label>
-        <select id="product_select">
+      <h3>Product x<span id="product_quantity">{{ product.quantity }}</span></h3>
+      <div id="product_elements">
+        {% if product.inspirable %}
+          <label for="product_input">Tier</label>
+          {% comment %} <select id="product_select">
+            {% for tier in product.tiers %}
+              <option value="{{ tier.num }}">{{ tier.num }}</option>
+            {% endfor %}
+          </select> {% endcomment %}
+        {% endif %}
+        <input type="number" id="product_input"  value="{{ product.tiers.0.buyout }}"/>
+        
+        {% if product.inspirable %}
+        <label for="inspired_product_input">Tier when inspired</label>
+        {% comment %} <select id="inspired_product_select"> used when skill calculation is built
           {% for tier in product.tiers %}
             <option value="{{ tier.num }}">{{ tier.num }}</option>
           {% endfor %}
-        </select>
-      {% endif %}
-      <input type="number" id="product_input"  value="{{ product.tiers.0.buyout }}"/>
-      
-      {% if product.inspirable %}
-      <label for="inspired_product_select">Tier when inspired</label>
-      <select id="inspired_product_select">
-        {% for tier in product.tiers %}
-          <option value="{{ tier.num }}">{{ tier.num }}</option>
-        {% endfor %}
-      </select>
-      <input type="number" id="inspired_product_input"  value="{{ product.tiers.0.buyout }}"/>
-      {% endif %}
-    </div>
+        </select> {% endcomment %}
+        <input type="number" id="inspired_product_input"  value="{{ product.tiers.0.buyout }}"/>
+        {% endif %}
+      </div>
 
-    <div id="cost_container">
-      <h4>Cost</h4>
-      <input type="number" id="cost" value="0"/>
-    </div>
-    <div id="product_container">
-      <h4>Average Product Value</h4>
-      <input type="number" id="avgerage_value_input" value="0">
-    </div>
-    <div id="profit_container">
-      <h4>Profit</h4>
-      <input type="number" id="profit" value="0"/>
-    </div>
+      <h3>Cost</h3>
+      <div id="cost_elements">
+        <input type="number" id="cost" value="0"/>
+      </div>
+      <h3>Average Product Value</h3>
+      <div id="avg_product_elements">
+        <input type="number" id="avgerage_value_input" value="0">
+      </div>
+      <h3>Profit</h3>
+      <div id="profit_elements">
+        <input type="number" id="profit" value="0"/>
+      </div>
 
     
-    {{ mats|json_script:"mats" }}
-    {{ optional_mat_slots|json_script:"optional_mat_slots" }}
-    {{ product|json_script:"product" }}
-    {{ recipe_skill|json_script:"recipe_skill"}}
-    <script src={% static 'calculator/calculatePL.js' %}></script>
+      {{ mats|json_script:"mats" }}
+      {{ optional_mat_slots|json_script:"optional_mat_slots" }}
+      {{ product|json_script:"product" }}
+      {{ recipe_skill|json_script:"recipe_skill"}}
+      <script src={% static 'calculator/calculatePL.js' %}></script>
+    </main>
 {% endblock %}

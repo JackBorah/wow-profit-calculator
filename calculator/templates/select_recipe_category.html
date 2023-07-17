@@ -2,27 +2,29 @@
 
 {% block body %}
     <h1>{{ view.kwargs.profession }}</h1>
-    {% for recipe_category in profession_categories_list %}
-        <h3>{{ recipe_category.name }}</h3>
-        <ul>
-        {% for recipe in recipe_list %}
-            {% if recipe.recipe_category.name == recipe_category.name %}
-            {% comment %}
-                <a href="{% url 'recipe-calculator' request.session.region request.session.realm view.kwargs.profession recipe_category.name recipe.id %}">
-                    <li>
-                        {{ recipe.name }}
-                    </li>
-                </a>
-            {% endcomment %}
-                <a href="{% url 'recipe-calculator' view.kwargs.profession recipe_category.name recipe.id %}">
-                    <li>
-                        {{ recipe.name }}
-                    </li>
-                </a>
-            {% endif %}
+    <main id="recipes-page">
+        {% for recipe_category in profession_categories_list %}
+            <h3>{{ recipe_category.name }}</h3>
+            <ul>
+            {% for recipe in recipe_list %}
+                {% if recipe.recipe_category.name == recipe_category.name %}
+                {% comment %}
+                    <a href="{% url 'recipe-calculator' request.session.region request.session.realm view.kwargs.profession recipe_category.name recipe.id %}">
+                        <li>
+                            {{ recipe.name }}
+                        </li>
+                    </a>
+                {% endcomment %}
+                    <a href="{% url 'recipe-calculator' view.kwargs.profession recipe_category.name recipe.id %}">
+                        <li>
+                            {{ recipe.name }}
+                        </li>
+                    </a>
+                {% endif %}
+            {% endfor %}
+            </ul>
+        {% empty %}
+            <h3>Error loading recipe categories.</h3>
         {% endfor %}
-        </ul>
-    {% empty %}
-        <h3>Error loading recipe categories.</h3>
-    {% endfor %}
+    </main>
 {% endblock %}

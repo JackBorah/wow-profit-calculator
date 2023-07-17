@@ -1,11 +1,14 @@
 class stats {
     constructor() {
-        // this.recipe_skill = Number(JSON.parse(document.getElementById('recipe_skill').textContent));
-        // this.user_skill = Number(document.getElementById("user_skill").value);
-        // this.skill_from_inspiration = Number(document.getElementById("skill_from_inspiration").value);
-        this.base_inspiration = Number(document.getElementById("base_inspiration").value);
-        this.base_resourcefulness = Number(document.getElementById("base_resourcefulness").value);
+        if (document.getElementById("base_inspiration") != null) {
+            this.base_inspiration = Number(document.getElementById("base_inspiration").value);
+        }
+        if (document.getElementById("base_resourcefulness") != null) {
+            this.base_resourcefulness = Number(document.getElementById("base_resourcefulness").value);
+        }
+        if (document.getElementById("base_multicraft") != null) {
         this.base_multicraft = Number(document.getElementById("base_multicraft").value);
+        }
     }
 
     revert_inputs_to_base_stats() {
@@ -85,21 +88,23 @@ const profit_input = document.querySelector("#profit");
 const sagacious_incense_checkbox = document.querySelector("#sagacious_incense");
 
 function update_total_stats(event) {
+    const inspiration_buff = 20;
+
+    if (base_inspiration_input != null) {
     const base_inspitation_value = Number(base_inspiration_input.value);
     const optional_inspiration_value = Number(inspiration_optional_input.value);
     total_inspiration_input.value = base_inspitation_value + optional_inspiration_value;
-
+    if (sagacious_incense_checkbox.checked) {
+        total_inspiration_input.value = (Number(total_inspiration_input.value) + inspiration_buff).toFixed(0);
+    }
+    }
     const base_resourcefulness_value = Number(base_resourcefulness_input.value);
     const optional_resourcefulness_value = Number(resourcefulness_optional_input.value);
     total_resourcefulness_input.value = base_resourcefulness_value + optional_resourcefulness_value;
-
+    if (base_multicraft_input != null) {
     const base_multicraft_value = Number(base_multicraft_input.value);
     const optional_multicraft_value = Number(multicraft_optional_input.value);
     total_multicraft_input.value = base_multicraft_value + optional_multicraft_value;
-
-    const inspiration_buff = 20;
-    if (sagacious_incense_checkbox.checked) {
-        total_inspiration_input.value = (Number(total_inspiration_input.value) + inspiration_buff).toFixed(0);
     }
 
     calculate_cost()
@@ -123,13 +128,17 @@ function update_base_stats(event) {
 }
 
 function update_optional_mat_stats(event) {
-    const optional_item_parent = event.target.parentElement;
+    const optional_item_parent = event.target.parentElement.parentElement;
     const checkbox = optional_item_parent.querySelector("#" + optional_item_parent.id + "_checkbox");
     const selected_index = optional_item_parent.querySelector("select").selectedIndex;
     const selected_item = optional_item_parent.querySelector("select").options[selected_index];
     
-    handle_added_stats(inspiration_optional_input, checkbox, "inspiration", selected_item);
-    handle_added_stats(multicraft_optional_input, checkbox, "multicraft", selected_item);
+    if (base_inspiration_input) {
+        handle_added_stats(inspiration_optional_input, checkbox, "inspiration", selected_item);
+    }
+    if (base_multicraft_input) {
+        handle_added_stats(multicraft_optional_input, checkbox, "multicraft", selected_item);
+    }
     handle_added_stats(resourcefulness_optional_input, checkbox, "resourcefulness", selected_item);
 
     update_total_stats();
@@ -166,7 +175,7 @@ function calculate_cost() {
 
     optional_mat_inputs.forEach((optional_mat_input, index) => {
         if (optional_mat_checkboxes[index].checked) {
-            let quantity = optional_mat_input.parentElement.querySelector('.optional_mat_quantity').innerText;
+            let quantity = optional_mat_input.parentElement.parentElement.querySelector('.optional_mat_quantity').innerText;
             cost += Number(optional_mat_input.value) * Number(quantity);
         }
     });
@@ -192,17 +201,21 @@ function calculate_avg_product_value() {
 }
 
 function calculate_value_with_multicraft(product_value, product_quantity) {
-    let multicraft = Number(total_multicraft_input.value) / 100;
-    let multicraft_yield = 1.75;
-    let quantity_operand = 1;
+    if (base_multicraft_input != null) {
+        let multicraft = Number(total_multicraft_input.value) / 100;
+        let multicraft_yield = 1.75;
+        let quantity_operand = 1;
 
-    if (multicraft == 0) {
-        quantity_operand = product_quantity;
+        if (multicraft == 0) {
+            quantity_operand = product_quantity;
+        }
+        else {
+            quantity_operand = product_quantity * multicraft * multicraft_yield
+        }
+        return (product_value * product_quantity) * (1-multicraft) + (product_value * product_quantity * multicraft_yield) * multicraft;
+    } else {
+        return product_value;
     }
-    else {
-        quantity_operand = product_quantity * multicraft * multicraft_yield
-    }
-    return (product_value * product_quantity) * (1-multicraft) + (product_value * product_quantity * multicraft_yield) * multicraft;
 }
 
 function calulate_value_with_inspiration(avg_value, product_quantity) {
@@ -232,12 +245,17 @@ for (let optional_mat_checkbox of optional_mat_checkboxes) {
 for (let optional_mat_select of optional_mat_selects) {
     optional_mat_select.addEventListener("change", update_optional_mat_stats);
 }
-document.querySelector("#sagacious_incense").addEventListener("change", update_total_stats);
+
 base_resourcefulness_input.addEventListener("change", update_base_stats);
-base_multicraft_input.addEventListener("change", update_base_stats);
-base_inspiration_input.addEventListener("change", update_base_stats);
+if (document.getElementById("base_multicraft")) {
+    base_multicraft_input.addEventListener("change", update_base_stats);
+}
+if (document.getElementById("base_inspiration")) {
+    base_inspiration_input.addEventListener("change", update_base_stats);
+    inpsired_product_input.addEventListener("change", calculate_avg_product_value);
+    document.querySelector("#sagacious_incense").addEventListener("change", update_total_stats);
+}
 product_input.addEventListener("change", calculate_avg_product_value);
-inpsired_product_input.addEventListener("change", calculate_avg_product_value);
 
 
 // 1. Get buyouts of the produced item

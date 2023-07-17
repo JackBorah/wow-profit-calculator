@@ -166,15 +166,16 @@ class RecipeCalculatorView(TemplateView):
         product_tiers = []
         for product in product_set:
             
-            if product.quantity > 1:
+            if product.quantity > 1 or product.item.type.id in [3]:
                 multicraftable = True
             else:
                 multicraftable = False
 
-            print(f"product {product.item.type.id}")
-            if product.item.type.id in [0, 2, 4, 7, 8]:
+            if product.item.type.id in [0, 3, 2, 4, 7, 8]:
+                print(f"item id: {product.item.type.id}")
                 inspirable = True
             else:
+                print(f"item id: {product.item.type.id}")
                 inspirable = False
 
             item = product.item
