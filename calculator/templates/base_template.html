@@ -6,14 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href={% static 'calculator/stylesheet.css' %}>
     <title>Calculator</title>
-    {% comment %} <script>const whTooltips = {colorLinks: true, iconizeLinks: true, renameLinks: true};</script>
-    <script src="https://wow.zamimg.com/js/tooltips.js"></script> {% endcomment %}
+    <script>const whTooltips = {colorLinks: true, iconizeLinks: true, renameLinks: true, iconSize: 'medium'};</script>
+    <script src="https://wow.zamimg.com/js/tooltips.js"></script>
   </head>
   <body>
     <h1 class="center-text"><a id="link-home" href={% url 'select-profession' %}>Wow Profit Calculator</a></h1>
-
-    {% comment %} <h1><a id="test" href="https://www.wowhead.com/item=31015/skyshatter-cover">test</a></h1> {% endcomment %}
-
   {% block body %}
   {% endblock %}
   </body>

@@ -2,7 +2,7 @@
 
 {% block body %}
     {% load static %}
-    <h1>{{ name }}</h1>
+    <h1><a href="https://www.wowhead.com/item={{ product.id }}">{{ name }}</a></h1>
 
     <main>
       <h3 id="crafting_stats_header">Crafting Stats (whole number)</h3>
@@ -15,7 +15,7 @@
             <input type="number" id="base_inspiration"  value="{{ inspiration }}">
           </div>
           <div id="optional_inspiration_container">
-            <label for="inspiration_optional">From Optional Materials</label>
+            <label for="inspiration_optional">Optional Mats</label>
             <input type="number" id="inspiration_optional"  value="{{ inspiration }}" readonly>
           </div>
           <div id="total_inspiration_container">
@@ -32,7 +32,7 @@
             <input type="number" id="base_resourcefulness"  value="{{ inspiration }}">
           </div>
           <div>
-            <label for="resourcefulness_optional">From Optional Materials</label>
+            <label for="resourcefulness_optional">Optional Mats</label>
             <input type="number" id="resourcefulness_optional"  value="{{ inspiration }}" readonly>
           </div>
           <div>
@@ -49,7 +49,7 @@
             <input type="number" id="base_multicraft"  value="{{ inspiration }}">
           </div>
           <div>
-            <label for="multicraft_optional">From Optional Materials</label>
+            <label for="multicraft_optional">Optional Mats</label>
             <input type="number" id="multicraft_optional"  value="{{ inspiration }}" readonly>
           </div>
           <div>
@@ -73,7 +73,10 @@
               {% endfor %}
             </select>
             {% endif %} {% endcomment %}
-            <input type="number" id="mat_{{ forloop.counter0 }}_input" class="mat_input" value="{{mat.tiers.0.buyout}}"/>
+            <span class="gold">
+              <input type="number" id="mat_{{ forloop.counter0 }}_input" class="mat_input" value="{{mat.tiers.0.buyout}}"/>
+              g
+            </span>
           </div>
         {% endfor %}
       </div>
@@ -86,7 +89,10 @@
           <label for="sagacious_incense">Sagacious Incense +20</label>
           <div>
           <input type="checkbox" id="sagacious_incense"  value="20">
-          <input id="sagacious_incense_input" type="number" value=0>
+          <span class="gold">
+            <input id="sagacious_incense_input" type="number" value=0>
+            g
+          </span>
           </div>
         </div>
         {% endif %}
@@ -107,8 +113,10 @@
               </optgroup>
             {% endfor %}
           </select>
-
-          <input type="number" id="optional_mat_{{ forloop.counter0 }}_input" class="optional_mat"  value="{{ optional_mat_slot.categories.0.items.0.buyout }}" matindex="{{ forloop.counter0 }}"/>
+          <span class="gold">
+            <input type="number" id="optional_mat_{{ forloop.counter0 }}_input" class="optional_mat"  value="{{ optional_mat_slot.categories.0.items.0.buyout }}" matindex="{{ forloop.counter0 }}"/>
+            g
+          </span>
           </div>
         </div>
         {% endfor %}
@@ -125,8 +133,10 @@
             {% endfor %}
           </select> {% endcomment %}
         {% endif %}
-        <input type="number" id="product_input"  value="{{ product.tiers.0.buyout }}"/>
-        
+        <span class="gold">
+          <input type="number" id="product_input"  value="{{ product.tiers.0.buyout }}"/>
+          g
+        </span>
         {% if product.inspirable %}
         <label for="inspired_product_input">Tier when inspired</label>
         {% comment %} <select id="inspired_product_select"> used when skill calculation is built
@@ -134,21 +144,33 @@
             <option value="{{ tier.num }}">{{ tier.num }}</option>
           {% endfor %}
         </select> {% endcomment %}
-        <input type="number" id="inspired_product_input"  value="{{ product.tiers.0.buyout }}"/>
+        <span class="gold">
+          <input type="number" id="inspired_product_input"  value="{{ product.tiers.0.buyout }}"/>
+          g
+        </span>
         {% endif %}
       </div>
 
       <h3>Cost</h3>
       <div id="cost_elements">
-        <input type="number" id="cost" value="0"/>
+        <span class="gold">
+          <input type="number" id="cost" value="0"/>
+          g
+        </span>
       </div>
       <h3>Average Product Value</h3>
       <div id="avg_product_elements">
-        <input type="number" id="avgerage_value_input" value="0">
+        <span class="gold">
+          <input type="number" id="avgerage_value_input" value="0">
+          g
+        <span>
       </div>
       <h3>Profit</h3>
       <div id="profit_elements">
-        <input type="number" id="profit" value="0"/>
+        <span class="gold">
+          <input type="number" id="profit" value="0"/>
+          g
+        <span>
       </div>
 
     

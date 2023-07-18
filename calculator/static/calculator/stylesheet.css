@@ -1,14 +1,19 @@
-/* body {
-    background-color: #efeff1;
-} */
+html {
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+    background-color: #000000cc;
+    color:rgb(0, 0, 0);
+}
 
 main {
     width: 50%;
     margin: auto;
     padding: 0px 10px 10px;
     display: block;
-    background-color: #efeff1;
-    /* background-color: #ffffff; */
+    background-color: #434344;
     box-shadow: 1px 1px 1px, -1px -1px 1px;
 }
 
@@ -25,11 +30,16 @@ h1 {
     text-align: center;
     margin: auto;
     padding: 10px 30px;
+    color:white;
+}
+
+h3, label, h4 {
+    color:white;
 }
 
 #link-home {
     text-decoration: none;
-    color:black;
+    color:white;
 }
 
 .profession-link {
@@ -44,6 +54,10 @@ input {
 
 input[type="checkbox"] {
     width:fit-content;
+}
+
+.gold {
+    color:rgb(238, 177, 62);
 }
 
 #professions-container {
@@ -69,6 +83,7 @@ input[type="checkbox"] {
     padding-right: 5px;
     padding-top: 10px;
     padding-bottom: 10px;
+    color: black;
 }
 
 #search {
@@ -117,14 +132,14 @@ h4 {
 #optional_materials, #materials {
     display: flex;
     flex-wrap: wrap;
-    align-items: end;
+    align-items: center;
 }
 
 .optional_mat_slot_container {
     display: flex;
     flex-direction: column;
     padding: 5px 20px;
-    width: 220px;
+    width: 240px;
 }
 
 #product_elements, #cost_elements, #avg_product_elements, #profit_elements {

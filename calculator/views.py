@@ -1,40 +1,29 @@
 from typing import Any, Dict
 
-from django.http import Http404
-from django.views.generic import DetailView, ListView, TemplateView
+from django.views.generic import ListView, TemplateView
 from calculator.models import *
-
-# Create your views here.
 
 class ProfessionIndexView(ListView):
     model = ProfessionIndex
     template_name = 'select_profession.html'
 
-# # TODO From old design and probably useless since other expansions won't be included
-# class ProfessionTiersIndexView(ListView):
-#     # model = ProfessionTier
-#     template_name = 'select_profession_tier.html'
-#     def get_context_data(self, **kwargs):
-#         context = super().get_context_data(**kwargs)
-#         chosen_profession = self.kwargs['profession']
-#         # context['filtered_profession_tier_list'] = ProfessionTier.objects.filter(profession__name=chosen_profession)
-
-#         if not context['filtered_profession_tier_list']:
-#             raise Http404
-    
-#         return context
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['professionindex_list'] = context['professionindex_list'].exclude(id__in=[182, 356, 186])
+        return context
 
 class ProfessionCategoriesView(ListView):
-    #needs categories and recipes to list recipes under their category
     model = RecipeCategory
     template_name = 'select_recipe_category.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         profession_name=self.kwargs['profession']
-        context['profession_categories_list'] = RecipeCategory.objects.filter(profession__name=profession_name).order_by('name')
-        context['recipe_list'] = Recipe.objects.filter(recipe_category__profession__name=profession_name)
-    
+        context['profession_categories_list'] = RecipeCategory.objects.filter(profession__name=profession_name).order_by('name').exclude(id__in=[295, 229, 203, 178, 177, 312, 234])
+        context['recipe_list'] = Recipe.objects.filter(recipe_category__profession__name=profession_name).exclude(recipe_category_id__in=[295, 229, 203, 178, 177, 312, 234]).exclude(name__icontains="Demonstration").exclude(name__icontains="Extraction:")
+
+        for recipe in context['recipe_list']:
+            recipe.product_id = recipe.product_set.all()[0].item.id
         return context
 
 class RecipeCalculatorView(TemplateView):
@@ -190,21 +179,6 @@ class RecipeCalculatorView(TemplateView):
             }
             product_tiers.append(tier)
 
-        # Small
-        # TODO remove (DNT) from names
-        # order tiers as 1, 2, 3 
-        # select widgets with optgroups in optional material
-            # needs names in empower with training matrix instead of numbers
-            # empower also needs a better optgroup name
-            # empower also isn't a great label since the items that fit in that slot are not all called training matrixes
-            # lesser illusterious insight needs no select as their is no qualities to choose
-            # everything number wise needs to be displayed as 1, 2, 3
-        # products tier when inspired is useless right now
-        # all stats in the html is useless
-        # products like weapons and armor have one item id and are distinguished by bonus and modifier ids
-            # wowhead seems to have the bonus ids in the querystring and a good way to select them now
-            # how should this be displayed? Something to think about when adding live auction prices
-
         context = {
             "name" : recipe.name,
             "recipe_skill" : 0,
@@ -216,6 +190,7 @@ class RecipeCalculatorView(TemplateView):
             "mats" : formatted_materials,
             "optional_mat_slots" : formatted_optional_mat_slots,
             "product" : {
+                "id" : recipe.product_set.all()[0].item.id,
                 "quantity" : product.quantity,
                 "multicraftable": multicraftable, 
                 "inspirable": inspirable,
@@ -242,40 +217,40 @@ class RecipeCalculatorView(TemplateView):
 # add vendor purchase and sell prices to items, make calculator use min of 
 # vendor buy and auction prices,
 
-class TalentTreeView(TemplateView):
-    # TODO move tree creation to a TraitTree model method, jot down somewhere to do the same with the rest of the views
-    context = {
-        "potion_mastery" : {
-            "trait_path" : {
-                "children_nodes" : [
-                    {
-                        "name" : "test name 1",
-                        "children_nodes" : [], # has no children
-                        "perk_nodes" : [
-                            {
-                                "name" : "test_perk_name_1",
-                                "max_ranks" : 1,
-                                "effect" : {
-                                    "type" : "test_stat",
-                                    "amount" : 30
-                                    }
-                            }
-                        ]
-                    },
-                    {
-                        "name" : "test name 2",
-                        "children_nodes" : [
-                            {
-                                "name" : "test name 3",
-                                "children_nodes" : [] # bottom most part of tree
-                            }
-                        ]
-                    }
-                ],
-                "perk_nodes" : [
-                    {},
-                    {}
-                ]
-            }
-        }
-    }
+# class TalentTreeView(TemplateView):
+#     # TODO move tree creation to a TraitTree model method, jot down somewhere to do the same with the rest of the views
+#     context = {
+#         "potion_mastery" : {
+#             "trait_path" : {
+#                 "children_nodes" : [
+#                     {
+#                         "name" : "test name 1",
+#                         "children_nodes" : [], # has no children
+#                         "perk_nodes" : [
+#                             {
+#                                 "name" : "test_perk_name_1",
+#                                 "max_ranks" : 1,
+#                                 "effect" : {
+#                                     "type" : "test_stat",
+#                                     "amount" : 30
+#                                     }
+#                             }
+#                         ]
+#                     },
+#                     {
+#                         "name" : "test name 2",
+#                         "children_nodes" : [
+#                             {
+#                                 "name" : "test name 3",
+#                                 "children_nodes" : [] # bottom most part of tree
+#                             }
+#                         ]
+#                     }
+#                 ],
+#                 "perk_nodes" : [
+#                     {},
+#                     {}
+#                 ]
+#             }
+#         }
+#     }

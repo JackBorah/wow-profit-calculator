@@ -8,18 +8,11 @@
             <ul>
             {% for recipe in recipe_list %}
                 {% if recipe.recipe_category.name == recipe_category.name %}
-                {% comment %}
-                    <a href="{% url 'recipe-calculator' request.session.region request.session.realm view.kwargs.profession recipe_category.name recipe.id %}">
-                        <li>
-                            {{ recipe.name }}
-                        </li>
+                <li>
+                    <a href="{% url 'recipe-calculator' view.kwargs.profession recipe_category.name recipe.id %}" data-wowhead="item={{ recipe.product_id }}">
+                            {{ recipe.spell.name }}
                     </a>
-                {% endcomment %}
-                    <a href="{% url 'recipe-calculator' view.kwargs.profession recipe_category.name recipe.id %}">
-                        <li>
-                            {{ recipe.name }}
-                        </li>
-                    </a>
+                </li>
                 {% endif %}
             {% endfor %}
             </ul>

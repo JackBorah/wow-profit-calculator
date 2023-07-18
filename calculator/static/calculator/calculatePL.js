@@ -95,7 +95,8 @@ function update_total_stats(event) {
     const optional_inspiration_value = Number(inspiration_optional_input.value);
     total_inspiration_input.value = base_inspitation_value + optional_inspiration_value;
     if (sagacious_incense_checkbox.checked) {
-        total_inspiration_input.value = (Number(total_inspiration_input.value) + inspiration_buff).toFixed(0);
+        // total_inspiration_input.value = (Number(total_inspiration_input.value) + inspiration_buff).toFixed(0);
+        inspiration_optional_input.value = inspiration_buff.toFixed(0);
     }
     }
     const base_resourcefulness_value = Number(base_resourcefulness_input.value);
@@ -166,7 +167,7 @@ function calculate_cost() {
     let pct_saved_from_resourcefulness = 0.3; // this isn't accurate since talent points change this .3 is roughly the median
 
     for (let mat_input of mats_inputs) {
-        let quantity = mat_input.parentElement.querySelector('.matQuantity').innerText;
+        let quantity = mat_input.parentElement.parentElement.querySelector('.matQuantity').innerText;
         //base cost
         cost += Number(mat_input.value) * Number(quantity);
         //resourcefulness
